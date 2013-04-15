@@ -3,12 +3,18 @@
 #include "camera.cu.h"
 
 using namespace optix;
-
+/*
 rtDeclareVariable(uint2, launchIndex, rtLaunchIndex,);
 rtBuffer<CudaRayDifferential, 2> bRays;
 RT_CALLABLE_PROGRAM CudaRayDifferential cameraRay()
 {
     return bRays[launchIndex];
+}
+*/
+
+RT_CALLABLE_PROGRAM void cameraRay()
+{
+
 }
 
 // Stubs only needed for sm_1x

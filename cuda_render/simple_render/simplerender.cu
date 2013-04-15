@@ -12,9 +12,12 @@ struct RtRayPayload
 rtBuffer<float3, 2>  bOutput;
 rtDeclareVariable(rtObject, top_group, ,);
 rtDeclareVariable(float, scene_epsilon, ,);
-rtCallableProgram(CudaRayDifferential, cameraRay, ());
+//rtCallableProgram(CudaRayDifferential, cameraRay, ());
+rtDeclareVariable(uint2, launchIndex, rtLaunchIndex,);
+rtBuffer<CudaRayDifferential, 2> bRays;
+
 RT_PROGRAM void simple_camera(){
-    CudaRayDifferential rd=cameraRay();
+    CudaRayDifferential rd=bRays[launchIndex];
     optix::Ray ray(rd.o, rd.d, 0, scene_epsilon);
     RtRayPayload pld;
     pld.ray_depth=0u;
@@ -35,7 +38,7 @@ rtDeclareVariable(float2, uv, attribute uv, );//tex coordinate
 rtDeclareVariable(float3, dpdu, attribute dpdu, );
 rtDeclareVariable(float3, dpdv, attribute dpdv, );
 rtDeclareVariable(float, t, rtIntersectionDistance, );
-rtDeclareVariable(uint2, launchIndex, rtLaunchIndex,);
+//rtDeclareVariable(uint2, launchIndex, rtLaunchIndex,);
 
 RT_PROGRAM void simple_cloest_hit()
 {
