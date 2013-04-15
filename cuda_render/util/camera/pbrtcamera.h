@@ -24,7 +24,7 @@ private:
     Sampler* sampler;
     Camera* camera;
     CameraSample* csamples;
-    optix::Buffer bRay;
+    optix::Buffer bRays;
     optix::Program progCamera;
     int width;
     int height;

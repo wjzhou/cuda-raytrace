@@ -41,9 +41,10 @@ void SimpleRenderer::render(const Scene* scene, CudaRender* cudarender,
     RTsize height;
     cudacamera->getExtent(width, height);
 
-    //optix::Program progCamera=gContext->createProgramFromPTXFile(progPTX,
-    //    "simple_camera");
+    optix::Program progCamera=gContext->createProgramFromPTXFile(progPTX,
+        "simple_camera");
     //progCamera["cameraRay"]->set(cudacamera->getRayProg());
+    gContext->setRayGenerationProgram(0, progCamera);
     cudacamera->preLaunch(scene);
     CameraSample* csamples=cudacamera->getCameraSamples();
 

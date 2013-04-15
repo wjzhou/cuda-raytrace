@@ -21,6 +21,7 @@ extern optix::Context gContext;
 class CudaRender : public Renderer{
 public:
     CudaRender();
+    ~CudaRender(){};
     virtual void Render(const Scene *scene);
     virtual Spectrum Li(const Scene *scene, const RayDifferential &ray,
         const Sample *sample, RNG &rng, MemoryArena &arena,

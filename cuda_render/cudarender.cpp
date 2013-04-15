@@ -147,6 +147,7 @@ void CudaRender::createCudaShape(const std::string& name, Reference<Shape>& shap
             return;
         }
         optix::GeometryInstance instance=gContext->createGeometryInstance();
+        instance->setGeometry(geometry);
         geometryInstances.push_back(instance);
         resultGeometryInstances->push_back(instance);
     } else if (cs->intersectionSpace() == CudaShape::OBJECT_SPACE){

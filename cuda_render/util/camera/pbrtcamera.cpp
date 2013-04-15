@@ -64,10 +64,14 @@ void PbrtCamera::preLaunch(const Scene* scene)
     int maximalSamples=width*height*samplesPerPixel;
     csamples=new CameraSample[maximalSamples];
 
-    optix::Buffer bRays=gContext->createBuffer(RT_BUFFER_INPUT);
+    bRays=gContext->createBuffer(RT_BUFFER_INPUT);
     bRays->setFormat(RT_FORMAT_USER);
     bRays->setElementSize(sizeof(CudaRayDifferential));
-    bRays->setSize(width,height,samplesPerPixel);
+
+    RTsize bWidth;
+    RTsize bHeight;
+    getExtent(bWidth, bHeight);
+    bRays->setSize(bWidth,bHeight);
 
     CudaRayDifferential* pRays=reinterpret_cast<CudaRayDifferential*>(bRays->map());
     int sampleCount, currSample=0;
@@ -95,7 +99,7 @@ void PbrtCamera::preLaunch(const Scene* scene)
 
 void PbrtCamera::postLaunch()
 {
-    bRay->destroy();
+    bRays->destroy();
     delete csamples;
 
 }
