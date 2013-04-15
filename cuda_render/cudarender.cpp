@@ -87,6 +87,7 @@ void CudaRender::objectInstance(std::vector<Reference<Primitive> >* instance,
 CudaRender::CudaRender()
 {
     lastInstance=nullptr;
+    init();
 }
 
 void CudaRender::Render(const Scene *scene)

@@ -36,8 +36,6 @@ public:
         vector<Reference<Primitive> >* currentInstance,
         const Material* kMaterial);
     optix::Group topGroup;
-    ///< any sub modular needs init should register here
-    void init();
     void createSubRenderer(Sampler *sampler, Camera *camera,
         const ParamSet &params, const std::string& rendername);
     ///< all the geometry will go into this vector(to give subrender chance to set
@@ -82,6 +80,8 @@ private:
         std::vector<optix::Transform>& transforms,
         int nReserveChildn=0);
     void assembleObject(std::vector<Reference<Primitive> >* key);
+    ///< any sub modular needs init should register here
+    void init();
 };
 
 
