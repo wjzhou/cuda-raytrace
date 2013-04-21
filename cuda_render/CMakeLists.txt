@@ -105,6 +105,12 @@ function(add_cuda_render_library target_name)
   source_group("PTX Files"  REGULAR_EXPRESSION ".+\\.ptx$")
   source_group("CUDA Files" REGULAR_EXPRESSION ".+\\.cu$")
 
+  # do not generate ptx rules for visual studio 2012
+  # I use the vs2012 for edit. Generating these rule will prevent compile the other cpp files
+  if (WIN32 AND NOT (MSVC10 OR MSVC90))
+    message(WARNING "On windows, only vs 2008 and vs 2010 is supportted by cuda 5.0")
+    set(source_files ${ARGN})
+  else()
   # Separate the sources from the CMake and CUDA options fed to the macro.  This code
   # comes from the CUDA_COMPILE_PTX macro found in FindCUDA.cmake.  We are copying the
   # code here, so that we can use our own name for the target.  target_name is used in the
@@ -115,6 +121,7 @@ function(add_cuda_render_library target_name)
   # Create the rules to build the PTX from the CUDA files.
    CUDA_WRAP_SRCS( ${target_name} PTX generated_files ${source_files} ${cmake_options}
      OPTIONS ${options} )
+  endif()
 
   # I don't know why, but one time I got a CMAKE generate error about the ${CMAKE_CURRENT_SOURCE_DIR}/${generated_files}.
   # It should be ok, because the CUDA_WRAP_SRCS calls ADD_CUSTOM_COMMAND. Just comment that line if thing goes wrong
