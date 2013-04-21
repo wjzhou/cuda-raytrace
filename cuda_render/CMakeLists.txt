@@ -118,15 +118,12 @@ function(add_cuda_render_library target_name)
 
   # I don't know why, but one time I got a CMAKE generate error about the ${CMAKE_CURRENT_SOURCE_DIR}/${generated_files}.
   # It should be ok, because the CUDA_WRAP_SRCS calls ADD_CUSTOM_COMMAND. Just comment that line if thing goes wrong
+  # finally, solve the problem. The generated_files already has full path..
     set (current_src
       ${CMAKE_CURRENT_SOURCE_DIR}/${source_files}
-     # ${CMAKE_CURRENT_SOURCE_DIR}/${generated_files}
+      ${generated_files}
       ${CMAKE_CURRENT_SOURCE_DIR}/${cmake_options}
     )
-
-  # finally, find a way to bypass the check
-   message(STATUS  aaa ${generated_files} {source_files})
-   SET_SOURCE_FILES_PROPERTIES(${generated_files} PROPERTIES GENERATED TRUE)
 
   add_library(${target_name} STATIC ${current_src})
   # CUDA_ADD_LIBRARY(${target_name} ${ARGN})
