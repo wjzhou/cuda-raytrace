@@ -19,9 +19,8 @@ uint32_t CudaSample::Add1D(uint32_t& num)
 
 CudaSample::CudaSample(const Sampler* sampler) 
     :sampler(sampler),
-    sample( Sample(nullptr, nullptr, nullptr, nullptr)),
     Sample1DOffset(0), Sample2DOffset(0)
 {
-
+    sample=new Sample(nullptr, nullptr, nullptr, nullptr);
 }
 

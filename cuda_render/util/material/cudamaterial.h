@@ -22,7 +22,8 @@ public:
     CudaMatteMaterial(const MatteMaterial* mm);
     virtual void setupMaterial(optix::GeometryInstance instance);
 private:
-    const MatteMaterial* matte;
+    const MatteMaterial* matte;//< this maybe null, if object is 
+                               //< used as fall back material
 
     //static optix::Program progF;
     //static void init();
