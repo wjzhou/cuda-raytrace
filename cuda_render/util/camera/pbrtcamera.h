@@ -3,8 +3,9 @@
 
 #include "sampler.h"
 #include "camera.h"
-#include "camera.cu.h"
+#include "../common.cu.h"
 #include "cudacamera.h"
+#include "../sampler/cudasample.h"
 void initCudaRDFromRD(CudaRayDifferential& dst, const RayDifferential& src);
 
     /* adaptive sampler is not supported, and I think the adaptive sampler
@@ -14,7 +15,7 @@ void initCudaRDFromRD(CudaRayDifferential& dst, const RayDifferential& src);
 class PbrtCamera : public CudaCamera{
 public:
     ~PbrtCamera();
-    virtual void init(Camera* camera, Sampler* sampler);
+    virtual void init(Camera* camera, Sampler* sampler, CudaSample* sample);
     void getExtent(RTsize& rWidth, RTsize& rHeight);
     CameraSample* getCameraSamples();
     optix::Program getRayProg();
@@ -23,8 +24,11 @@ public:
 private:
     Sampler* sampler;
     Camera* camera;
+    CudaSample* cudaSample;
     CameraSample* csamples;
     optix::Buffer bRays;
+    optix::Buffer bRandom1D;
+    optix::Buffer bRandom2D;
     optix::Program progCamera;
     int width;
     int height;

@@ -1,6 +1,6 @@
 #include <optix.h>
 #include <optixu/optixu_math_namespace.h>
-#include "camera.cu.h"
+#include "util/common.cu.h"
 
 using namespace optix;
 /*

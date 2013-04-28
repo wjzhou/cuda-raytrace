@@ -5,10 +5,11 @@
 
 #include <optixpp_namespace.h>
 #include "core/sampler.h"
+#include "../sampler/cudasample.h"
 class CudaCamera{
 public:
     virtual ~CudaCamera(){};
-    virtual void init(Camera* camera, Sampler* sampler)=0;
+    virtual void init(Camera* camera, Sampler* sampler, CudaSample* sample)=0;
     virtual void getExtent(RTsize& rWidth, RTsize& rHeight)=0;
     virtual optix::Program getRayProg()=0;
     virtual void preLaunch(const Scene* scene)=0;

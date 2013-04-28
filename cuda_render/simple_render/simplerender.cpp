@@ -3,6 +3,7 @@
 #include "util/camera/cudacamera.h"
 #include "core/camera.h"
 #include "core/film.h"
+#include "util/light/cudalight.h"
 SimpleRenderer::SimpleRenderer(Sampler* s, Camera* c, const ParamSet& params)
     :sampler(s), camera(c)
 {
@@ -17,15 +18,22 @@ SimpleRenderer::~SimpleRenderer()
 void SimpleRenderer::render(const Scene* scene, CudaRender* cudarender,
     CudaCamera* cudacamera)
 {
+    gContext->setPrintEnabled(true);
+    gContext->setPrintBufferSize(4096);
+
     gContext->setStackSize(1024);
-    gContext->setRayTypeCount(1);
+    gContext->setRayTypeCount(2);
     gContext->setEntryPointCount(1);
+    gContext["scene_epsilon"]->setFloat(0.01f);
     const string progPTX=ptxpath("simple_render", "simplerender.cu");
     gContext->setMissProgram(0, gContext->createProgramFromPTXFile(progPTX,
         "simple_miss"));
 
     optix::Program progClosestHit=gContext->createProgramFromPTXFile(progPTX,
         "simple_cloest_hit");
+    optix::Program progShadowAnyHit=gContext->createProgramFromPTXFile(progPTX,
+        "simple_shadow_any_hit");
+
     for (std::vector<optix::GeometryInstance>::iterator
         it=cudarender->geometryInstances.begin();
         it!= cudarender->geometryInstances.end(); ++it)
@@ -33,10 +41,15 @@ void SimpleRenderer::render(const Scene* scene, CudaRender* cudarender,
         (*it)->setMaterialCount(1);
         optix::Material m=gContext->createMaterial();
         m->setClosestHitProgram(0, progClosestHit);
+        m->setAnyHitProgram(1, progShadowAnyHit);
         (*it)->setMaterial(0, m);
     }
 
-    cudacamera->init(camera, sampler);
+    //Sample* sample=new Sample(sampler, nullptr, nullptr, scene);
+    CudaSample* cudaSample=new CudaSample(sampler);
+    CudaLight light;
+    light.preLaunch(scene, cudaSample);
+    cudacamera->init(camera, sampler, cudaSample);
     RTsize width;
     RTsize height;
     cudacamera->getExtent(width, height);
@@ -46,9 +59,8 @@ void SimpleRenderer::render(const Scene* scene, CudaRender* cudarender,
     //progCamera["cameraRay"]->set(cudacamera->getRayProg());
     gContext->setRayGenerationProgram(0, progCamera);
     cudacamera->preLaunch(scene);
+
     CameraSample* csamples=cudacamera->getCameraSamples();
-
-
     optix::Buffer bOutput=gContext->createBuffer(RT_BUFFER_OUTPUT);
     bOutput->setFormat(RT_FORMAT_FLOAT3);
     bOutput->setSize(width, height);
@@ -81,6 +93,7 @@ void SimpleRenderer::render(const Scene* scene, CudaRender* cudarender,
         }
         camera->film->AddSample(csamples[i], result);
     }
+    light.postLaunch();
     cudacamera->postLaunch();
 
     camera->film->WriteImage();

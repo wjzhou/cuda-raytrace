@@ -1,5 +1,6 @@
 #include "util.h"
 #include "config.h"
+#include "spectrum.h"
 std::string
     ptxpath( const std::string& target, const std::string& base )
 {
@@ -34,3 +35,12 @@ optix::float3 float3fromPoint(const Point& p)
     return ret;
 }
 
+#define CHECK_TYPE_COMPAT(T, U)                     \
+    typedef T TC##__LINE__; typedef U TC##__LINE__
+
+CudaSpectrum CudaSpectrumFromSpectrum(const Spectrum& spec){
+     CHECK_TYPE_COMPAT(optix::float3, CudaSpectrum);
+     CudaSpectrum result;
+     spec.ToRGB(&result.x);
+     return result;
+}

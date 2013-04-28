@@ -138,6 +138,7 @@ void CudaRender::createCudaShape(const std::string& name, Reference<Shape>& shap
         resultTransforms=&instanceTransforms;
     }
 
+    optix::GeometryInstance instance;
     if (cs->intersectionSpace() == CudaShape::GLOBAL_SPACE)
     {
         optix::Geometry geometry=cs->setupGeometry();
@@ -147,18 +148,32 @@ void CudaRender::createCudaShape(const std::string& name, Reference<Shape>& shap
             Warning("shape: %s setup geometry fail", name.c_str());
             return;
         }
-        optix::GeometryInstance instance=gContext->createGeometryInstance();
+        instance=gContext->createGeometryInstance();
         instance->setGeometry(geometry);
         geometryInstances.push_back(instance);
         resultGeometryInstances->push_back(instance);
     } else if (cs->intersectionSpace() == CudaShape::OBJECT_SPACE){
-        optix::Transform transform=gContext->createTransform();
-        geometryInstances.push_back(transform->getChild<optix::GeometryInstance>());
+        optix::Transform transform=cs->setupTransform();
+        instance=transform->getChild<optix::GeometryInstance>();
+        geometryInstances.push_back(instance);
         resultTransforms->push_back(transform);
     }
 
+    auto it=materials.find(kMaterial);
+    //CudaMaterial*& material=materials[kMaterial];
+    CudaMaterial* material;
+    if (it==materials.end())
+    {
+        material=CudaMaterial::createCudaMeteral(kMaterial);
+        materials[kMaterial]=material;
+    }
+    else
+    {
+        material=(*it).second;
+    }
+    material->setupMaterial(instance);
+    
 }
-
 
 static std::map<std::pair<Transform*,Transform*>, optix::Transform>
     transform2CudaTransformMap;

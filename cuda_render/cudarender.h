@@ -7,6 +7,7 @@
 #include "core/renderer.h"
 #include "core/memory.h"
 #include "core/spectrum.h"
+#include "util/material/cudamaterial.h"
 class CudaCamera;
 class CudaRender;
 
@@ -41,6 +42,7 @@ public:
     ///< all the geometry will go into this vector(to give subrender chance to set
     ///< optix material(closest hit program)
     std::vector<optix::GeometryInstance> geometryInstances;
+
 private:
 
     // Do special process for triangles, because they are the major geometries and
@@ -68,6 +70,10 @@ private:
 
     ///< this is used to detect object instance in pbrt
     vector<Reference<Primitive> >* lastInstance;
+
+    ///< this map store the mapping between pbrt material and cudamaterial
+    ///< after render, this should be erase, not implement yet...
+    std::map<const Material*, CudaMaterial*> materials;
 
     CudaRenderer* renderer;
     /// <summary>
