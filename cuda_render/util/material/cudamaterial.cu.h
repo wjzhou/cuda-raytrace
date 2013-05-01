@@ -1,11 +1,15 @@
 #include <optix_world.h>
 #include "../common.cu.h"
-rtDeclareVariable(CudaSpectrum, kd, ,);
+#include "cuda.h"
+//rtDeclareVariable(CudaSpectrum, kd, ,);
+rtDeclareVariable(CUdeviceptr, materialParameter,,);
 rtDeclareVariable(MaterialType, materialType, ,);
+
+
 
 __device__ __inline__ CudaSpectrum f_Lambert(const optix::float3& wo, const optix::float3& wi)
 {
-    return kd; 
+    return *((CudaSpectrum*)materialParameter);
 }
 
 

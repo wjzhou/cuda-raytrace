@@ -2,6 +2,7 @@ add_cuda_render_library (util
     util.h
     util.cpp
     common.cu.h
+    dummy.cu
     shape/cudashape.h
     shape/cudashape.cpp
     shape/cudatrianglemesh.cu

@@ -8,6 +8,7 @@
 #include "util/camera/pbrtcamera.h"
 #include "api.h"
 #include "simple_render/simplerender.h"
+#include "cuda.h"
 
 
 optix::Context gContext;
@@ -16,6 +17,16 @@ optix::Context gContext;
 void CudaRender::init()
 {
     gContext=optix::Context::create();
+   
+    //compile a dummy context to force the optix initial the cuda context
+    //a gContext->compile()does not work. it will break the optix lib somehow, with error
+    //message something like "program aabb bitness" 
+    gContext->setRayTypeCount(1);
+    gContext->setEntryPointCount(1);
+    gContext->setRayGenerationProgram(0, 
+        gContext->createProgramFromPTXFile(ptxpath("util", "dummy.cu"), "dummy"));
+    gContext->compile();
+
     CudaShape::init();
 }
 
