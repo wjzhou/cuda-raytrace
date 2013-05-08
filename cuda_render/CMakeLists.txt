@@ -145,6 +145,16 @@ function(add_cuda_render_library target_name)
 
 endfunction()
 
+function(add_cuda_render_cuda_library target_name)
+  source_group("CUDA Files" REGULAR_EXPRESSION ".+\\.cu$")
+  if (WIN32 AND NOT (MSVC10 OR MSVC90))
+    message(WARNING "On windows, only vs 2008 and vs 2010 is supportted by cuda 5.0")
+  else()
+    cuda_add_library(${target_name} ${ARGN})
+    set (cuda_render_sublibs ${cuda_render_sublibs} ${target_name} CACHE INTERNAL "catch all the cuda render implements")
+  endif()
+endfunction()
+
 # setup the global setting for the sublibs
 include_directories(${CMAKE_SOURCE_DIR}/pbrt-v2/src)
 include_directories(${CMAKE_SOURCE_DIR}/pbrt-v2/src/core)
@@ -157,7 +167,7 @@ include_directories(${OptiX_INCLUDE}
 
 
 add_subdirectory(util)
-#add_subdirectory(photon_mapping)
+add_subdirectory(photon_mapping)
 add_subdirectory(simple_render)
 
 add_library(cuda_render

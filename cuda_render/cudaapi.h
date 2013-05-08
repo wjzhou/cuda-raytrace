@@ -5,7 +5,9 @@
 #ifndef cudaapi_h__
 #define cudaapi_h__
 
-Renderer* CreateCudaRenderer(Sampler *sampler, Camera *camera, const ParamSet &params);
+Renderer* CreateCudaRenderer(Sampler *sampler, Camera *camera,
+                             const ParamSet &params,
+                             const std::string& rendername);
 
 void CudaRenderInit();
 

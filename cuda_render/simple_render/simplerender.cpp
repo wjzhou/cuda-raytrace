@@ -73,6 +73,7 @@ void SimpleRenderer::render(const Scene* scene, CudaRender* cudarender,
 
     optix::float3* pOutput= reinterpret_cast<optix::float3*> (bOutput->map());
     int currSample=width*height;
+    //FILE *file = fopen("sm.txt","w");
     for(int i=0; i<currSample; ++i){
         RGBSpectrum result=RGBSpectrum::FromRGB(reinterpret_cast<float*>(&pOutput[i]));
         // Issue warning if unexpected radiance value returned
@@ -92,7 +93,10 @@ void SimpleRenderer::render(const Scene* scene, CudaRender* cudarender,
             result = Spectrum(0.f);
         }
         camera->film->AddSample(csamples[i], result);
+        //fprintf(file, "\niX:%f\tiY%f\t", csamples[i].imageX, csamples[i].imageY);
+        //result.Print(file);
     }
+    //fclose(file);
     light.postLaunch();
     cudacamera->postLaunch();
 

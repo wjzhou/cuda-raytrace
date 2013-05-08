@@ -1,6 +1,7 @@
 add_cuda_render_library (util
     util.h
     util.cpp
+    util.cu.h
     common.cu.h
     dummy.cu
     shape/cudashape.h
@@ -22,3 +23,5 @@ add_cuda_render_library (util
     material/cudamaterial.cu.h
     material/cudamaterial.cpp
     )
+
+add_subdirectory(random)

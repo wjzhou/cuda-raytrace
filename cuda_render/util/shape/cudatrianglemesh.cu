@@ -1,32 +1,13 @@
-
-//#include <optix.h>
-//#include <optixu/optixu_math_namespace.h>
-//#include <optixu/optixu_matrix_namespace.h>
-//#include <optixu/optixu_aabb_namespace.h>
-//#include <optixpp_namespace.h>
 #include <optix_world.h>
+#include "cudashape.cu.h"
 using namespace optix;
-
 
 rtBuffer<float3> bVertices;
 rtBuffer<float3> bNormals;
 rtBuffer<float2> bUvs;
 rtBuffer<int3>   bIndices;
 
-//rtDeclareVariable(,  );
 rtDeclareVariable(optix::Ray, ray, rtCurrentRay, );
-rtDeclareVariable(float3, geometry_normal, attribute geometry_normal, );
-rtDeclareVariable(float3, shading_normal, attribute shading_normal, );
-rtDeclareVariable(float2, uv, attribute uv, );//tex coordinate
-//rtDeclareVariable(float3, p, attribute p, ); //point position
-rtDeclareVariable(float3, dpdu, attribute dpdu, );
-rtDeclareVariable(float3, dpdv, attribute dpdv, );
-
-struct GeometryPayload
-{
-float3 color;
-int recursion_depth;
-};
 
 RT_PROGRAM void trianglemesh_intersect( int primIdx )
 {
@@ -90,7 +71,7 @@ RT_PROGRAM void trianglemesh_intersect( int primIdx )
                  float3 n0 = bNormals[idx.x];
                  float3 n1 = bNormals[idx.y];
                  float3 n2 = bNormals[idx.z];
-                 shading_normal = normalize(n1*beta + n2*gamma + n0*(1.0f-beta-gamma));//
+                 shading_normal = normalize(n1*beta + n2*gamma + n0*(1.0f-beta-gamma));
                  //shading override
              }
              //p=ray.origin+t*ray.direction;

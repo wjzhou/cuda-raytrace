@@ -19,8 +19,8 @@ void CudaObjectInstance( std::vector<Reference<Primitive> >* key, const Transfor
     cudaRender->objectInstance(key, transform);
 }
 
-Renderer* CreateCudaRenderer(Sampler* sampler, Camera* camera, const ParamSet& params )
+Renderer* CreateCudaRenderer(Sampler* sampler, Camera* camera, const ParamSet& params, const std::string& rendername)
 {
-    cudaRender->createSubRenderer(sampler, camera, params, "simple");
+    cudaRender->createSubRenderer(sampler, camera, params, rendername);
     return cudaRender;
 }

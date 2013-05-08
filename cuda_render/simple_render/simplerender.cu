@@ -4,6 +4,7 @@
 #include "util/light/cudalight.cu.h"
 #include "util/camera/camera.cu.h"
 #include "util/material/cudamaterial.cu.h"
+#include "util/shape/cudashape.cu.h"
 using namespace optix;
 
 struct RtRayPayload
@@ -38,11 +39,6 @@ struct ShadowPRD
 };
 
 rtDeclareVariable(optix::Ray, ray, rtCurrentRay, );
-rtDeclareVariable(float3, geometry_normal, attribute geometry_normal, );
-rtDeclareVariable(float3, shading_normal, attribute shading_normal, );
-rtDeclareVariable(float2, uv, attribute uv, );//tex coordinate
-rtDeclareVariable(float3, dpdu, attribute dpdu, );
-rtDeclareVariable(float3, dpdv, attribute dpdv, );
 rtDeclareVariable(float, t, rtIntersectionDistance, );
 rtDeclareVariable(ShadowPRD, shadow_prd, rtPayload, );
 
@@ -78,17 +74,11 @@ RT_PROGRAM void simple_cloest_hit()
     }
 
     bOutput[launchIndex]=L;
-    /*float costha=dot(world_shading_normal, ray.direction);
-    if(costha>0.0f)
-        bOutput[launchIndex]=make_float3(costha,0.0f,0.0f);
-    else
-        bOutput[launchIndex]=make_float3(0.0f,0.0f,0.0f);
-    */    
-    //bOutput[launchIndex]=t*ray.direction+ray.origin;
-    //bOutput[launchIndex]=make_float3(logf(t));
-
-    //bOutput[launchIndex]=make_float3(1.0f, 0.0f, 0.0f);
-
+#ifdef DEBUG_KERNEL
+    if(isPrint()){
+        rtPrintf("\nDL:%f %f %f", L.x, L.y, L.z);
+    }
+#endif
 }
 
 RT_PROGRAM void simple_miss()

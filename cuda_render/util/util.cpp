@@ -35,6 +35,33 @@ optix::float3 float3fromPoint(const Point& p)
     return ret;
 }
 
+Normal normalfromFloat3(const optix::float3& n)
+{
+    Normal ret;
+    ret.x=n.x;
+    ret.y=n.y;
+    ret.z=n.z;
+    return ret;
+}
+
+Vector vectorfromFloat3(const optix::float3& v)
+{
+    Vector ret;
+    ret.x=v.x;
+    ret.y=v.y;
+    ret.z=v.z;
+    return ret;
+}
+
+Point pointfromFloat3(const optix::float3& p)
+{
+    Point ret;
+    ret.x=p.x;
+    ret.y=p.y;
+    ret.z=p.z;
+    return ret;
+}
+
 #define CHECK_TYPE_COMPAT(T, U)                     \
     typedef T TC##__LINE__; typedef U TC##__LINE__
 

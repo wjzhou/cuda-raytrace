@@ -118,10 +118,10 @@ void CudaRender::Render(const Scene *scene)
 void CudaRender::createSubRenderer(Sampler *sampler, Camera *camera,
     const ParamSet &params, const std::string& rendername)
 {
-    if(rendername=="photon_mapping"){
-         //renderer=new PhotonMappingRenderer(sampler, camera, params);
-    }else{
+    if(rendername=="simple"){
         renderer=new SimpleRenderer(sampler, camera, params);
+    }else{
+        renderer=new PhotonMappingRenderer(sampler, camera, params);
     }
 }
 
