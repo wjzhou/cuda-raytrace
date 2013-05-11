@@ -44,7 +44,7 @@ optix::Geometry CudaTriangleMesh::setupGeometry()
 
     if(n){
         bNs=gContext->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_FLOAT3, nverts);
-        optix::float3* pNs=static_cast<optix::float3*>(bUvs->map());
+        optix::float3* pNs=static_cast<optix::float3*>(bNs->map());
         for (int i=0; i<nverts; ++i){
             pNs[i]=optix::make_float3(n[i].x, n[i].y, n[i].z);
         }
