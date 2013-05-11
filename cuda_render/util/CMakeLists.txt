@@ -9,6 +9,9 @@ add_cuda_render_library (util
     shape/cudatrianglemesh.cu
     shape/cudatrianglemesh.h
     shape/cudatrianglemesh.cpp
+    shape/cudasphere.cu
+    shape/cudasphere.h
+    shape/cudasphere.cpp
     camera/camera.cu.h
     camera/pbrtcamera.cu
     camera/pbrtcamera.h

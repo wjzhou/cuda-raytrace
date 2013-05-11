@@ -1,8 +1,11 @@
 #include "cudashape.h"
 #include "cudatrianglemesh.h"
+#include "shapes/sphere.h"
+#include "cudasphere.h"
 void CudaShape::init()
 {
     CudaTriangleMesh::init();
+    CudaSphere::init();
 }
 
 CudaShape*
@@ -15,8 +18,12 @@ CudaShape::CreateCudaShape(const string& name, Reference<Shape>& shape)
         delete tm;
         shape=ctm;
         return ctm;
-    }
-    else{
+    }else if(Sphere* sp=dynamic_cast<Sphere*>(pShape)){
+        CudaShape* csp=new CudaSphere(sp);
+        shape=pShape;
+        return csp;
+    }else{
+        Warning("Unimplemented Cuda Shape: %s", typeid(*it).name());
         shape=pShape;
         return nullptr;
     }
