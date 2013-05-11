@@ -23,7 +23,6 @@ CudaShape::CreateCudaShape(const string& name, Reference<Shape>& shape)
         shape=pShape;
         return csp;
     }else{
-        Warning("Unimplemented Cuda Shape: %s", typeid(*it).name());
         shape=pShape;
         return nullptr;
     }
