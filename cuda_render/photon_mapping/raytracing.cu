@@ -37,6 +37,7 @@ struct ShadowPRD
 
 rtDeclareVariable(optix::Ray, ray, rtCurrentRay, );
 rtDeclareVariable(float, t, rtIntersectionDistance, );
+rtDeclareVariable(RtRayPayload, raytracingPayLoad, rtPayload, );
 rtDeclareVariable(ShadowPRD, shadow_prd, rtPayload, );
 //rtDeclareVariable(int, lightsource,,); //if the shape is not a light source
                                       // this is  -1, otherwise the index to light source
@@ -46,8 +47,24 @@ rtDeclareVariable(ShadowPRD, shadow_prd, rtPayload, );
 rtBuffer<RayTracingRecord, 2> bRayTracingOutput;
 RT_PROGRAM void raytracing_closest_hit()
 {
-    RayTracingRecord record;
     const float3 point=ray.origin+ray.direction*t;
+    if (isSpecular(materialType)){
+        Ray newRay;
+        CudaSpectrum spec=materialSpecular(-ray.direction, &newRay.direction, true, point);
+        newRay.origin=point;
+        newRay.ray_type=PM_RayTracingType;
+        newRay.tmin=scene_epsilon;
+        newRay.tmax=RT_DEFAULT_MAX;
+        raytracingPayLoad.ray_depth++;
+        if (raytracingPayLoad.ray_depth>10){
+            bRayTracingOutput[launchIndex].flags=RayTracingRecordFlageException;
+            return;
+        }
+        rtTrace(top_group, newRay, raytracingPayLoad);
+        return;
+    }
+
+    RayTracingRecord record;
     float3 world_shading_normal = normalize(
         rtTransformNormal(RT_OBJECT_TO_WORLD, shading_normal));
     float3 world_geometry_normal = normalize(
@@ -58,7 +75,7 @@ RT_PROGRAM void raytracing_closest_hit()
     record.dpdu=dpdu;
     record.dpdv=dpdv;
     record.shadingNormal=shading_normal;
-    record.geometryNormal=shading_normal;
+    record.geometryNormal=geometry_normal;
     record.direction=ray.direction;
     record.material=materialType;
     record.materialParameter=materialParameter;

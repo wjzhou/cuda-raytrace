@@ -58,7 +58,7 @@ struct CudaLightDevice{
 };
 
 enum MaterialType{
-    MaterialTypeMatt
+    MaterialTypeMatt, MaterialTypeMirror, MaterialTypeGlass
 };
 
 #endif

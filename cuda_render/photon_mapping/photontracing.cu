@@ -117,7 +117,24 @@ rtDeclareVariable(PhotonTraingPayLoad, photonTracingPayLoad, rtPayload, );
 
 RT_PROGRAM void photontracing_closest_hit()
 {
+    float3 hit_point = ray.origin + t*ray.direction;
     float3 world_shading_normal   = normalize(rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal));
+
+    if (isSpecular(materialType)){
+        Ray newRay;
+        CudaSpectrum spec=materialSpecular(-ray.direction, &newRay.direction, false,hit_point);
+        newRay.origin=hit_point;
+        newRay.ray_type=PM_PhotonTracingType;
+        newRay.tmin=scene_epsilon;
+        newRay.tmax=RT_DEFAULT_MAX;
+        photonTracingPayLoad.alpha*=spec;
+        if(photonTracingPayLoad.nIntersections==0){
+            photonTracingPayLoad.nIntersections++;
+        }
+        rtTrace(top_group, newRay, photonTracingPayLoad);
+        return;
+    }
+
     float3 world_geometric_normal = normalize(rtTransformNormal( RT_OBJECT_TO_WORLD, geometry_normal));
     float3 wo = -ray.direction;
     //float3 ffnormal = faceforward(world_shading_normal, wo, world_geometric_normal);
@@ -126,7 +143,6 @@ RT_PROGRAM void photontracing_closest_hit()
         rtPrintf("\n\nwhadingNormal:%f %f %f", world_shading_normal.x, world_shading_normal.y, world_shading_normal.z);
     }
 #endif
-    float3 hit_point = ray.origin + t*ray.direction;
     
     uint nIntersections=photonTracingPayLoad.nIntersections;
     if (materialHasNonSpecular()){

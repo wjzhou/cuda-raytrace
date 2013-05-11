@@ -6,16 +6,18 @@
 #include "../util.cu.h"
 #include "../shape/cudashape.cu.h"
 #include "optix_cuda_interop.h"
+#include "cudamaterial.common.cu.h"
 using namespace optix;
 //rtDeclareVariable(CudaSpectrum, kd, ,);
 rtDeclareVariable(CUdeviceptr, materialParameter,,);
 rtDeclareVariable(MaterialType, materialType, ,);
 
-
-//For the lambert material, THe meterial Paramter is R*INV_PI of PBRT
-__device__ __inline__ CudaSpectrum f_Lambert(const optix::float3& wo, const optix::float3& wi)
+//use a different name with the rtDeclareVariable. In case I forget to add the method, the compiler
+//can emit a error
+__device__ __inline__ CudaSpectrum f_Lambert(CUdeviceptr parameter,
+                                             const optix::float3& wo, const optix::float3& wi)
 {
-    return *((CudaSpectrum*)materialParameter);
+    return (*((CudaSpectrum*)parameter))*INV_PI;
 }
 
 __device__ __inline__ CudaSpectrum f(MaterialType materialType, CUdeviceptr materialParameter, 
@@ -23,15 +25,16 @@ __device__ __inline__ CudaSpectrum f(MaterialType materialType, CUdeviceptr mate
 {
     switch(materialType){
     case MaterialType::MaterialTypeMatt:
-        return f_Lambert(wo, wi);
+        return f_Lambert(materialParameter, wo, wi);
     }
+
     return black();
 }
-
+/*
 __device__ __inline__ CudaSpectrum f(const optix::float3& wo, const optix::float3& wi)
 {
     return f(materialType, materialParameter, wo, wi);
-}
+}*/
 
 __device__ __inline__ bool SameHemisphere(const float3 &wo, const float3 &wi)
 {
@@ -118,16 +121,16 @@ __device__ __inline__ CudaSpectrum Sample_f_Lambert(const float3 &wo, float3 *wi
             rtPrintf("\nwo:%f %f %f wi:%f %f %f", wo.x, wo.y, wo.z, wi->x, wi->y, wi->z);
         }
 #endif
-     return f(wo, *wi);
+     return f_Lambert(materialParameter, wo, *wi);
 }
 
 __device__ __inline__ CudaSpectrum Sample_f(const float3 &wow, float3 *wiw,
                                             float u1, float u2, float *pdf)
 {
-    const float3& nn=shading_normal;
-    const float3& sn=normalize(dpdu);
+    const float3 nn=normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, shading_normal));
+    const float3 sn=normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, dpdu));
     const float3 tn=cross(nn, sn);
-    if(launchIndex.x==1 &&launchIndex.y==0){
+    if(isPrint()){
         rtPrintf("\nSn:%f %f %f, tn:%f %f %f, nn:%f %f %f u1: %f, u2:%f", sn.x, sn.y, sn.z, tn.x, tn.y, tn.z,nn.x, nn.y, nn.z,u1, u2);
 
     }
@@ -138,4 +141,80 @@ __device__ __inline__ CudaSpectrum Sample_f(const float3 &wow, float3 *wiw,
     *wiw=LocalToWorld(wi, nn, sn, tn);
     return result;
 }
+
+
+__inline__ __device__ CudaSpectrum materialSpecularMirror(const float3 &wo, float3 *wi, bool photonRay)
+{    
+    *wi=make_float3(-wo.x, -wo.y, wo.z);
+    return make_float3(1.f);
+}
+
+__inline__ __device__ float CosTheta(const float3 &w) { return w.z; }
+__inline__ __device__ float SinTheta2(const float3 &w) {
+    return max(0.f, 1.f - CosTheta(w)*CosTheta(w));
+}
+
+__inline__ __device__ CudaSpectrum materialSpecularGlass(const float3 &wo, float3 *wi, bool photonRay)
+{    
+    //bool entering=photonRay^(CosTheta(wo)>0.f);
+    bool entering=CosTheta(wo)>0.f;
+    float sini2=SinTheta2(wo);
+    float eta=1.5f;
+    if(entering){
+        eta=1/1.5f;
+    }else{
+        eta=1.5f;
+    }
+    float sint2=eta*eta*sini2;
+    if(sint2>=1.0f){ //total internal reflection
+        return black();
+    }
+    float cost=sqrtf(fmax(0.f, 1.f-sint2));
+    if (entering){
+        cost=-cost;
+    }
+    float sintOverSini=eta;
+    *wi=make_float3(sintOverSini*-wo.x, sintOverSini*-wo.y, cost);
+    return make_float3(1.f);
+}
+
+__inline__ __device__ CudaSpectrum materialSpecular(const float3 &wow, float3 *wiw, bool photonRay, float3 p)
+{
+    const float3 nn=normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, shading_normal));
+    const float3 sn=normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, dpdu));
+    const float3 tn=cross(nn, sn);
+
+    float3 wo=WorldToLocal(wow, nn, sn, tn);
+    float3 wi;
+    CudaSpectrum result=black();
+
+    switch(materialType){
+    case MaterialTypeMirror:
+        result=materialSpecularMirror(wo, &wi, photonRay);
+        break;
+    case MaterialTypeGlass:
+        result=materialSpecularGlass(wo, &wi, photonRay);
+        break;
+        //result=materialSpecularGlass(wo, &wi, photonRay);
+    }
+    
+    *wiw=LocalToWorld(wi, nn, sn, tn);
+    
+    //float3 n=faceforward(nn, wow, nn);
+    //*wiw=-wow+2.f*dot(nn, wow)*nn;
+    
+    //rtPrintf("\nwow: %f, %f, %f, nn: %f, %f, %f, \nwi: %f, %f, %f sn:%f, %f, %f", wow.x, wow.y, wow.z, nn.x, nn.y, nn.z, wi.x, wi.y, wi.z, sn.x,sn.y,sn.z);
+    //rtPrintf("\nwo: %f, %f, %f, wi: %f, %f, %f", wo.x, wo.y, wo.z, wi.x, wi.y, wi.z);
+    //rtPrintf("%d",materialType);
+    return result;
+}
+
+
+__inline__ __device__ bool isSpecular(MaterialType material){
+    if (material==MaterialTypeGlass||material==MaterialTypeMirror){
+        return true;
+    }
+    return false;
+}
+
 #endif // cudamaterial.cu_h__
