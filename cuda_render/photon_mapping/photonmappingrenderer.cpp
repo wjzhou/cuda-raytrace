@@ -119,7 +119,14 @@ void PhotonMappingRenderer::RaytracingPass(){
         static_cast<unsigned int>(height)
         );
 
-    //RayTracingRecord* pRayTracingOutput= reinterpret_cast<RayTracingRecord*> (bRayTracingOutput->map());
+    /*RayTracingRecord* pRayTracingOutput= reinterpret_cast<RayTracingRecord*> (bRayTracingOutput->map());
+    for(int i=0;i<width*height;++i){
+        long long a=(long long)pRayTracingOutput[i].materialParameter;
+        if (pRayTracingOutput[i].material!=0||a<1000000){
+           // printf("%d",a);
+        }
+    }
+    bRayTracingOutput->unmap();*/
 }
 
 
@@ -143,24 +150,21 @@ void PhotonMappingRenderer::CreatePhotonMap(CUdeviceptr dPhotonMap, unsigned int
         const CudaPhoton& photon=hPhotonMap[i];
         if(isValid(photon)){
             //emplace_back is not implemented in vs 2010
-            pointfromFloat3(photon.p);
-            photons.push_back(Photon(
-                pointfromFloat3(photon.p), photon.alpha, photon.wi));
-        }                            
+            photons.push_back(TPhoton(photon));
+        }
     }
     Info("Valid photons:%d, Total photons:%d", photons.size(), numPhotons);
-    KdTree<Photon> kdtree(photons);
+    if(photons.size()>0){
+        KdTree<TPhoton> kdtree(photons);
+        for (unsigned int i=0; i<kdtree.nNodes; ++i){
+            hPhotonMap[i]=kdtree.nodeData[i].cudaphoton;
+            hPhotonMap[i].splitAxis=kdtree.nodes[i].splitAxis;
+            hPhotonMap[i].hasLeftChild=kdtree.nodes[i].hasLeftChild;
+            hPhotonMap[i].rightChild=kdtree.nodes[i].rightChild;
+        }
 
-    for (unsigned int i=0; i<kdtree.nNodes; ++i){
-        hPhotonMap[i].splitAxis=kdtree.nodes[i].splitAxis;
-        hPhotonMap[i].hasLeftChild=kdtree.nodes[i].hasLeftChild;
-        hPhotonMap[i].rightChild=kdtree.nodes[i].rightChild;
-        hPhotonMap[i].p=float3fromPoint(kdtree.nodeData[i].p);
-        hPhotonMap[i].alpha=kdtree.nodeData[i].alpha;
-        hPhotonMap[i].wi=kdtree.nodeData[i].wi;
+        checkCudaErrors(cuMemcpyHtoD(dPhotonMap, hPhotonMap, kdtree.nNodes * sizeof(CudaPhoton)));
     }
-   
-    checkCudaErrors(cuMemcpyHtoD(dPhotonMap, hPhotonMap, kdtree.nNodes * sizeof(CudaPhoton)));
     delete[] hPhotonMap;
 }
 

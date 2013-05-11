@@ -29,16 +29,11 @@ __device__ __inline__ CudaSpectrum KdTreeLookup(RayTracingRecord& rec, int nLook
     unsigned int stack_current = 0;
     unsigned int nodeNum = 0;
     CudaSpectrum L=black();
-    //float3& p=rec.position;
-    float3 p=make_float3(0.f,0.f,0.f);
+    float3& p=rec.position;
 #define push_node(N) stack[stack_current++] = (N)
 #define pop_node()   stack[--stack_current]
     push_node( 0 );
     do {
-        if(nodeNum>(1<<12)){
-            nodeNum=pop_node();
-            continue;
-        }
         CudaPhoton* node=&indirectPhotonmap[nodeNum];
         int axis=node->splitAxis;
 
@@ -116,8 +111,8 @@ __device__ __inline__ CudaSpectrum directLight(const RayTracingRecord& rec){
     CudaSpectrum L=black();
     const float3& point=rec.position;
 
-    float3 world_shading_normal = rec.geometryNormal;
-    float3 world_geometry_normal = rec.shadingNormal;
+    float3 world_shading_normal = rec.shadingNormal;
+    float3 world_geometry_normal = rec.geometryNormal;
 
     int totalLight=lightSize();
     //rtPrintf("1 %f,%f,%f\n", L.x,L.y,L.z);
@@ -151,7 +146,9 @@ RT_PROGRAM void gathering_camera(){
     
     //bOutput[launchIndex]=directLight(rec)+LPhoton(rec, 8, 10.0f);
     CudaSpectrum DL=directLight(rec);
-    CudaSpectrum IDL=LPhoton(rec, 8, 50.0f);
+    //CudaSpectrum DL=make_float3(0.f);
+    CudaSpectrum IDL=LPhoton(rec, 8, 5.0f);
+    //CudaSpectrum IDL=make_float3(0.f);
     if(isPrint()){
         rtPrintf("\nDL:%f %f %f, IDL: %f %f %f", DL.x, DL.y, DL.z, IDL.x, IDL.y, IDL.z);
     }

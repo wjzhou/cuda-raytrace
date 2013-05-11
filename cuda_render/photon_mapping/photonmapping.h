@@ -37,7 +37,7 @@ struct CudaPhoton{
     CudaSpectrum alpha;
     optix::float3 wi;
 };
-const unsigned int PHOTON_MAX_RIGHT_CHILD=(1<<29);
+const unsigned int PHOTON_MAX_RIGHT_CHILD=((1<<29)-1);
 
 __device__ __host__ __inline__ void setValid(CudaPhoton& photon)
 {
