@@ -129,21 +129,20 @@ void PhotonMappingRenderer::RaytracingPass(){
     bRayTracingOutput->unmap();*/
 }
 
-
-struct Photon {
-    Photon(const Point &pp, const CudaSpectrum &wt, const optix::float3 &w)
-        : p(pp), alpha(wt), wi(w) { }
-    Photon() { }
-    Point p;
-    CudaSpectrum alpha;
-    optix::float3 wi;
+//used by fall back pbrt kdtree build on CPU, correct is concern, performance not
+struct TPhoton {
+    TPhoton(const CudaPhoton& cudaphoton)
+        : p(pointfromFloat3(cudaphoton.p)), cudaphoton(cudaphoton) { }
+    TPhoton() { }
+    Point p; //require by pbrt kdtree template
+    CudaPhoton cudaphoton;
 };
 
 void PhotonMappingRenderer::CreatePhotonMap(CUdeviceptr dPhotonMap, unsigned int numPhotons)
 {
     CudaPhoton* hPhotonMap=new CudaPhoton[numPhotons];
     checkCudaErrors(cuMemcpyDtoH(hPhotonMap, dPhotonMap, numPhotons * sizeof(CudaPhoton)));
-    std::vector<Photon> photons;
+    std::vector<TPhoton> photons;
     photons.reserve(numPhotons);
     //unsigned int totalValidPhotons=0;
     for (unsigned int i=0; i<numPhotons; ++i){
