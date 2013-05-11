@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #include "helper_string.h"
 
@@ -32,7 +33,7 @@
 // on which CUDA functions are used.
 
 // CUDA Runtime error messages
-#ifdef __DRIVER_TYPES_H__
+#ifdef __CUDA_RUNTIME_API_H__
 static const char *_cudaGetErrorEnum(cudaError_t error)
 {
     switch (error)
@@ -709,8 +710,14 @@ bool check(T result, char const *const func, const char *const file, int const l
     }
 }
 
-#define checkCudaErrors(val)           check ( (val), #val, __FILE__, __LINE__ )
-#ifdef __DRIVER_TYPES_H__
+//check return true when there are errors..
+#define checkCudaErrors(val)                               \
+    do{                                                    \
+        assert(!check ((val), #val, __FILE__, __LINE__ )); \
+    }                                                      \
+    while(0)
+
+#ifdef __CUDA_RUNTIME_API_H__
 // This will output the proper CUDA error strings in the event that a CUDA host call returns an error
 
 // This will output the proper error string when calling cudaGetLastError
