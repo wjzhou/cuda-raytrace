@@ -83,6 +83,9 @@ void CudaRender::assembleObject(std::vector<Reference<Primitive> >* key)
 void CudaRender::objectInstance(std::vector<Reference<Primitive> >* instance,
                                 const Transform& tr)
 {
+    if(lastInstance != nullptr){
+        assembleObject(lastInstance);
+    }
      std::map<std::vector<Reference<Primitive> >*, optix::Group>::const_iterator it;
      it=instanceGroups.find(instance);
      if(it == instanceGroups.end()){
@@ -129,16 +132,16 @@ void CudaRender::createCudaShape(const std::string& name, Reference<Shape>& shap
     vector<Reference<Primitive> >* currentInstance,
     const Material* kMaterial)
 {
-    //Last pbrt object define has been end
-    if ((lastInstance != nullptr) && (currentInstance != lastInstance)){
-        assembleObject(currentInstance);
-        lastInstance=currentInstance;
-    }
-
     CudaShape* cs=CudaShape::CreateCudaShape(name, shape);
     if (cs==nullptr){
         Warning("shape:%s not implemented yet", name.c_str());
         return;
+    }
+
+    //Last pbrt object define has been end
+    if ((lastInstance != nullptr) && (currentInstance != lastInstance)){
+        assembleObject(currentInstance);
+        lastInstance=currentInstance;
     }
 
     std::vector<optix::GeometryInstance>* resultGeometryInstances=&topGeometryInstances;
@@ -165,7 +168,7 @@ void CudaRender::createCudaShape(const std::string& name, Reference<Shape>& shap
         resultGeometryInstances->push_back(instance);
     } else if (cs->intersectionSpace() == CudaShape::OBJECT_SPACE){
         optix::Transform transform=cs->setupTransform();
-        instance=transform->getChild<optix::GeometryInstance>();
+        instance=transform->getChild<optix::GeometryGroup>()->getChild(0);
         geometryInstances.push_back(instance);
         resultTransforms->push_back(transform);
     }
