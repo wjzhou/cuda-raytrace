@@ -5,9 +5,9 @@
 #include "pbrt.h"
 #include "shapes\trianglemesh.h"
 #include "optixpp_namespace.h"
-class CudaTriangleMesh: public TriangleMesh, public CudaShape{
+class CudaTriangleMesh: public CudaShape{
 public:
-    CudaTriangleMesh(TriangleMesh &&);
+    CudaTriangleMesh(const Reference<Shape>& triangleMesh);
 
     SPACE intersectionSpace(){return CudaShape::GLOBAL_SPACE;}
     optix::Geometry setupGeometry();
@@ -20,5 +20,6 @@ protected:
     optix::Buffer bUvs;
     optix::Buffer bIndices;
     optix::Buffer bNs;
+    const Reference<Shape> shape;
 };
 #endif // cudatrianglemesh_h__

@@ -15,9 +15,9 @@ __device__ __inline__ CudaSpectrum Sample_L_Point(const CudaLightDevice& cld, co
     float3& uwi, float& pdf)
 {
     uwi=cld.o-point; //unnormalized wi
-    if(isPrint()){
-        rtPrintf("\ncld:%f, %f, %f, poing%f, %f, %f\n", cld.o.x, cld.o.y, cld.o.z, point.x, point.y, point.z );
-    }
+        
+    //rtPrintf("\ncld:%f, %f, %f, poing%f, %f, %f\n", cld.o.x, cld.o.y, cld.o.z, point.x, point.y, point.z );
+    
     float invlength2=1.0f/dot(uwi, uwi);
     //wi=uwi*sqrtf(invlength2);
     pdf=1.f;
@@ -27,16 +27,18 @@ __device__ __inline__ CudaSpectrum Sample_L_Point(const CudaLightDevice& cld, co
 __device__ __inline__ CudaSpectrum Sample_L_Area_Disk(const CudaLightDevice& cld, const float3& point,
     float3& wi, float& pdf)
 {
-    optix::uint3 index=make_uint3(cld.randomStart, launchIndex);
+    optix::uint3 index=make_uint3(cld.random2DStart, launchIndex);
     optix::float2 u=bLightRandom2D[index];
     float3 uwi=cld.o+u.x*cld.p1+u.y*cld.p2-point;
     
     wi=normalize(uwi);
     //pdf=1.f;
     float distanceSquared=dot(uwi,uwi);
-    
-    pdf=distanceSquared/dot(cld.normal, wi);
-    return cld.intensity;
+    float costha=-dot(cld.normal, wi);
+    //rtPrintf("point%f, %f, %f, cld.normal:%f,%f, %f, wi: %f, %f, %f",
+    //    point.x, point.y, point.z, cld.normal.x, cld.normal.y, cld.normal.z, wi.x, wi.y, wi.z);
+    pdf=distanceSquared/(costha*cld.area);
+    return costha>0.0f? cld.intensity: black();
 }
 
 __device__ __inline__ CudaSpectrum Sample_L(const int iLight, const float3& point,
@@ -92,7 +94,7 @@ __device__ __inline__ CudaSpectrum Sample_L_Area_Disk(const int iLight, float lu
     ray->tmax=RT_DEFAULT_MAX;
 
     *pdf=INV_TWOPI;
-    return cld.intensity;
+    return cld.intensity*cld.area; //should be add to the pdf
 }
 
 
@@ -106,6 +108,20 @@ __device__ __inline__ CudaSpectrum Sample_L(const int iLight, float lu1, float l
         return Sample_L_Area_Disk(iLight, lu1, lu2, u1, u2, ray, Ns, pdf);
     }
     
+    return black();
+}
+
+//Use light L to prevent name collision with L local variable use in other place
+//This is another feature of C++ that I do not like
+__device__ __inline__ CudaSpectrum lightL(int iLight, const float3 &wow)
+{
+    //hit a light source
+    if(iLight>=0){
+        CudaLightDevice cld=bLights[iLight];
+        if(dot(cld.normal, wow) > 0.f){
+            return cld.intensity;
+        }
+    }
     return black();
 }
 

@@ -116,12 +116,10 @@ __device__ __inline__ CudaSpectrum Sample_f_Lambert(const float3 &wo, float3 *wi
     *wi = CosineSampleHemisphere(u1, u2);
     if (wo.z < 0.) wi->z *= -1.f;
         *pdf = Pdf(wo, *wi);
-#ifdef DEBUG_KERNEL
-        if(isPrint()){
-            rtPrintf("\nwo:%f %f %f wi:%f %f %f", wo.x, wo.y, wo.z, wi->x, wi->y, wi->z);
-        }
-#endif
-     return f_Lambert(materialParameter, wo, *wi);
+
+    //rtPrintf("\nwo:%f %f %f wi:%f %f %f", wo.x, wo.y, wo.z, wi->x, wi->y, wi->z);
+
+    return f_Lambert(materialParameter, wo, *wi);
 }
 
 __device__ __inline__ CudaSpectrum Sample_f(const float3 &wow, float3 *wiw,

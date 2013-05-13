@@ -17,9 +17,7 @@ __device__ __inline__ float kernel(float dist2, float maxDist2)
 __device__ __inline__ CudaSpectrum processPhoton(const RayTracingRecord& record, const CudaPhoton& photon, float dist2, float maxDist2)
 {
     float k = kernel(dist2, maxDist2);
-    if(isPrint()){
-        rtPrintf("\nalpha:%f, %f, %f",photon.alpha.x, photon.alpha.y, photon.alpha.z);
-    }
+    rtPrintf("\nalpha:%f, %f, %f",photon.alpha.x, photon.alpha.y, photon.alpha.z);
     //return k/(maxDist2)*fabs(dot(record.shadingNormal, photon.wi))*f(record.material, record.materialParameter, -record.direction, photon.wi)*photon.alpha;
     return fabs(dot(record.shadingNormal, photon.wi))*f(record.material, record.materialParameter, -record.direction, photon.wi)*photon.alpha;
 }
@@ -112,10 +110,7 @@ RT_PROGRAM void photonGatheringCamera(){
         bOutput[launchIndex] = make_float3(0.0f,0.0f,0.0f);
         return;
     }
-    //rtPrintf("%ld", (long long)indirectPhotonmap);
-    if(isPrint()){
-        rtPrintf("\nradius2:%f, photons:%d IDL: %f %f %f", rec.radius2, rec.photon_count, rec.flux.x/rec.photon_count, rec.flux.y/rec.photon_count, rec.flux.z/rec.photon_count);
-    }
+    
     int currentPhotons=0;
     CudaSpectrum IDL=LPhoton(rec, currentPhotons, rec.radius2);
     float alpha=0.7f;
@@ -126,9 +121,8 @@ RT_PROGRAM void photonGatheringCamera(){
 
         rec.flux=(rec.flux+IDL)*ratio;
         rec.photon_count=totalPhotons;
-        if(isPrint()){
-            rtPrintf("\nradius2:%f, currphotons:%d,  photons:%d IDL: %f %f %f", rec.radius2, currentPhotons, rec.photon_count, rec.flux.x/rec.photon_count, rec.flux.y/rec.photon_count, rec.flux.z/rec.photon_count);
-        }
+        rtPrintf("\nradius2:%f, currphotons:%d,  photons:%d IDL: %f %f %f", rec.radius2, currentPhotons, 
+            rec.photon_count, rec.flux.x/rec.photon_count, rec.flux.y/rec.photon_count, rec.flux.z/rec.photon_count);
     }
 }
 
@@ -141,8 +135,7 @@ RT_PROGRAM void finalGatheringCamera(){
         IDL=rec.flux*INV_PI/(rec.radius2*emittingPhotons);
     }
         
-    if(isPrint()){
-        rtPrintf("\n------DL:%f %f %f,emittingPhotons:%f,  IDL: %f %f %f\n-----\n", DL.x, DL.y, DL.z, emittingPhotons, IDL.x, IDL.y, IDL.z);
-    }
+    rtPrintf("\n------DL:%f %f %f,emittingPhotons:%f,  IDL: %f %f %f\n-----\n", 
+        DL.x, DL.y, DL.z, emittingPhotons, IDL.x, IDL.y, IDL.z);
     bOutput[launchIndex]=DL+IDL;
 }

@@ -8,45 +8,46 @@
 optix::Program CudaTriangleMesh::progBoundingBox;
 optix::Program CudaTriangleMesh::progIntersection;
 
-CudaTriangleMesh::CudaTriangleMesh(TriangleMesh && tm)
-    :TriangleMesh(std::move(tm))
+CudaTriangleMesh::CudaTriangleMesh(const Reference<Shape>& triangleMesh)
+    :shape(triangleMesh)
 {
 }
 
 optix::Geometry CudaTriangleMesh::setupGeometry()
 {
+    const TriangleMesh* tm=dynamic_cast<const TriangleMesh*>(shape.GetPtr());
     optix::Geometry geomtry=gContext->createGeometry();
-    geomtry->setPrimitiveCount(ntris);
+    geomtry->setPrimitiveCount(tm->ntris);
     geomtry->setIntersectionProgram(progIntersection);
     geomtry->setBoundingBoxProgram(progBoundingBox);
 
     bVertices=gContext->createBuffer(RT_BUFFER_INPUT,
-        RT_FORMAT_FLOAT3, nverts);
+        RT_FORMAT_FLOAT3, tm->nverts);
     optix::float3* pVertics=static_cast<optix::float3*>(bVertices->map());
 
     /* TriangleMesh has already transform the points into world coordinator
      * Can not use memcpy here because Point type is not POD*/
-    for (int i=0; i< nverts; ++i){
-        pVertics[i]=optix::make_float3(p[i].x, p[i].y, p[i].z);
+    for (int i=0; i< tm->nverts; ++i){
+        pVertics[i]=optix::make_float3(tm->p[i].x, tm->p[i].y, tm->p[i].z);
     }
     bVertices->unmap();
     geomtry["bVertices"]->setBuffer(bVertices);
 
     bIndices=gContext->createBuffer(RT_BUFFER_INPUT,
-        RT_FORMAT_INT3, ntris);
+        RT_FORMAT_INT3, tm->ntris);
     optix::int3* pIndices=static_cast<optix::int3*>(bIndices->map());
-    for (int i=0; i<ntris; ++i){
-        pIndices[i]=optix::make_int3(vertexIndex[3*i],
-            vertexIndex[3*i+1], vertexIndex[3*i+2]);
+    for (int i=0; i<tm->ntris; ++i){
+        pIndices[i]=optix::make_int3(tm->vertexIndex[3*i],
+            tm->vertexIndex[3*i+1], tm->vertexIndex[3*i+2]);
     }
     bIndices->unmap();
     geomtry["bIndices"]->setBuffer(bIndices);
 
-    if(n){
-        bNs=gContext->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_FLOAT3, nverts);
+    if(tm->n){
+        bNs=gContext->createBuffer(RT_BUFFER_INPUT, RT_FORMAT_FLOAT3, tm->nverts);
         optix::float3* pNs=static_cast<optix::float3*>(bNs->map());
-        for (int i=0; i<nverts; ++i){
-            pNs[i]=optix::make_float3(n[i].x, n[i].y, n[i].z);
+        for (int i=0; i<tm->nverts; ++i){
+            pNs[i]=optix::make_float3(tm->n[i].x, tm->n[i].y, tm->n[i].z);
         }
         bNs->unmap();
     }else{
@@ -54,13 +55,13 @@ optix::Geometry CudaTriangleMesh::setupGeometry()
     }
     geomtry["bNormals"]->setBuffer(bNs);
 
-    if(uvs){
+    if(tm->uvs){
         bUvs=gContext->createBuffer(RT_BUFFER_INPUT,
-            RT_FORMAT_FLOAT2, nverts);
+            RT_FORMAT_FLOAT2, tm->nverts);
 
         optix::float2* pUvs=static_cast<optix::float2*>(bUvs->map());
-        for (int i=0; i<nverts; ++i){
-            pUvs[i]=optix::make_float2(uvs[2*i], uvs[2*i+1]);
+        for (int i=0; i<tm->nverts; ++i){
+            pUvs[i]=optix::make_float2(tm->uvs[2*i], tm->uvs[2*i+1]);
         }
         bUvs->unmap();
     }else{

@@ -8,9 +8,9 @@ void CudaRenderInit()
 
 void CreateCudaShape(const std::string& name, Reference<Shape>& shape,
     std::vector<Reference<Primitive> >* currentInstance,
-    const Material* material)
+    const Material* material, int lightIndex)
 {
-    cudaRender->createCudaShape(name, shape, currentInstance, material);
+    cudaRender->createCudaShape(name, shape, currentInstance, material, lightIndex);
 
 }
 

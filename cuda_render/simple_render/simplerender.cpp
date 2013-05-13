@@ -18,8 +18,6 @@ SimpleRenderer::~SimpleRenderer()
 void SimpleRenderer::render(const Scene* scene, CudaRender* cudarender,
     CudaCamera* cudacamera)
 {
-    gContext->setPrintEnabled(true);
-    gContext->setPrintBufferSize(4096);
 
     gContext->setStackSize(1024);
     gContext->setRayTypeCount(2);

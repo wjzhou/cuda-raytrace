@@ -95,16 +95,10 @@ RT_PROGRAM void photontracing_camera()
     photonRay.ray_type=PM_PhotonTracingType;
     photonRay.tmax=RT_DEFAULT_MAX;
     CudaSpectrum alpha = (AbsDot(N1, photonRay.direction) * Le) / (pdf);
-    if(isPrint()){
-        rtPrintf("\nclpha: %f %f %f, Le: %f %f %f, dot: %f pdf:%f", 
-            alpha.x, alpha.y, alpha.z, Le.x, Le.y, Le.z, AbsDot(N1, photonRay.direction), pdf);
-    }
+
+    //rtPrintf("\nclpha: %f %f %f, Le: %f %f %f, dot: %f pdf:%f", 
+    //    alpha.x, alpha.y, alpha.z, Le.x, Le.y, Le.z, AbsDot(N1, photonRay.direction), pdf);
     PhotonTraingPayLoad pld={alpha, true, 0, pm_index};
-#ifdef DEBUG_KERNEL
-    if (isPrint()){
-        debugPrint(photonRay);
-    }
-#endif
     rtTrace(top_group, photonRay, pld);
 }
 __inline__ __device__ bool materialHasNonSpecular()
@@ -121,9 +115,7 @@ RT_PROGRAM void photontracing_closest_hit()
     float3 hit_point = ray.origin + t*ray.direction;
     //float3 world_shading_normal   = normalize(rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal));
 
-    if(isPrint()){
-        rtPrintf("\nnIntersections:%d", photonTracingPayLoad.nIntersections);
-    }
+    rtPrintf("\nnIntersections:%d", photonTracingPayLoad.nIntersections);
 
     if (isSpecular(materialType)){
         Ray newRay;
@@ -141,13 +133,9 @@ RT_PROGRAM void photontracing_closest_hit()
     }
 
     float3 wo = -ray.direction;
-    //float3 ffnormal = faceforward(world_shading_normal, wo, world_geometric_normal);
-/*#ifdef DEBUG_KERNEL
-    if(isPrint()){
-        rtPrintf("\n\nwhadingNormal:%f %f %f", world_shading_normal.x, world_shading_normal.y, world_shading_normal.z);
-    }
-#endif
-*/   
+
+    //rtPrintf("\n\nwhadingNormal:%f %f %f", world_shading_normal.x, world_shading_normal.y, world_shading_normal.z);
+
     
     uint nIntersections=photonTracingPayLoad.nIntersections;
     if (materialHasNonSpecular()){
@@ -163,10 +151,6 @@ RT_PROGRAM void photontracing_closest_hit()
     }
     
     if (nIntersections >= max_photon_count) {
-#ifdef DEBUG_KERNEL
-        if(isPrint())
-            rtPrintf("\nr");
-#endif
         return;
     }
 
@@ -183,10 +167,8 @@ RT_PROGRAM void photontracing_closest_hit()
     CudaSpectrum anew = photonTracingPayLoad.alpha * fr *
         AbsDot(wiw, wShadingNormal) / pdf;
 
-#ifdef DEBUG_KERNEL
-    if(isPrint())
-        rtPrintf("\nanew:%f %f %f, %f, %f", anew.x, anew.y, anew.z, AbsDot(wiw, wShadingNormal), pdf);
-#endif
+    rtPrintf("\nanew:%f %f %f, %f, %f", anew.x, anew.y, anew.z, AbsDot(wiw, wShadingNormal), pdf);
+
 
     // Possibly terminate photon path with Russian roulette
     /*float continueProb = min(1.f, anew.y / photonTracingPayLoad.alpha.y); //the pbrt use the y() value
@@ -199,11 +181,6 @@ RT_PROGRAM void photontracing_closest_hit()
 
     Ray newRay = Ray(hit_point, wiw, PM_PhotonTracingType,
         scene_epsilon);
-#ifdef DEBUG_KERNEL
-    if(isPrint()){
-        debugPrint(newRay);
-    }
-#endif 
     rtTrace(top_group, newRay, photonTracingPayLoad);
 }
 
@@ -214,18 +191,9 @@ RT_PROGRAM void  photontracing_exception()
 
 RT_PROGRAM void  photontracing_miss()
 {
-#ifdef DEBUG_KERNEL
-    if(isPrint()){
-        rtPrintf("\nm");
-    }
-#endif
+    rtPrintf("\nmiss");
 }
 
 RT_PROGRAM void  photontracing_debug_anyhit()
 {
-#ifdef DEBUG_KERNEL
-    if(isPrint()){
-        rtPrintf("\na");
-    }
-#endif
 }

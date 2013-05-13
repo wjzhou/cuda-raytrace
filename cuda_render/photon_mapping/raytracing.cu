@@ -45,7 +45,7 @@ rtDeclareVariable(ShadowPRD, shadow_prd, rtPayload, );
 //rtDeclareVariable(uint2, launchIndex, rtLaunchIndex,);
 //rtDeclareVariable(MaterialType, materialType, ,);
 
-
+rtDeclareVariable(int, lightIndex, ,);
 __device__ __inline__ CudaSpectrum directLight(const RayTracingRecord& rec){
     CudaSpectrum L=black();
     const float3& point=rec.position;
@@ -53,8 +53,16 @@ __device__ __inline__ CudaSpectrum directLight(const RayTracingRecord& rec){
     float3 world_shading_normal = rec.shadingNormal;
     //    float3 world_geometry_normal = rec.geometryNormal;
 
+    
     int totalLight=lightSize();
-    //rtPrintf("1 %f,%f,%f\n", L.x,L.y,L.z);
+
+    if(lightIndex>=totalLight){
+        rtPrintf("error, out of bound light index:%d", lightIndex);
+        return L; //prevent GPU kernel crash
+    }
+
+    //lightL(lightIndex, -rec.direction);
+    
     for (int i=0; i<totalLight; ++i)
     {
         float3 uwi;
@@ -66,7 +74,8 @@ __device__ __inline__ CudaSpectrum directLight(const RayTracingRecord& rec){
         rtTrace(top_group, shadowRay, pld);
         float3 wi=normalize(uwi);
         float3 wo=normalize(-rec.direction);
-        L+=pld.attenuation*fabs(dot(world_shading_normal, wi))*f(rec.material, rec.materialParameter, wo, wi)*li;
+        L+=pld.attenuation*fabs(dot(world_shading_normal, wi))*f(rec.material, rec.materialParameter, wo, wi)*li/pdf;
+        rtPrintf("dot:%f lix:%f pdf:%f", fabs(dot(world_shading_normal, wi)), li.x, pdf);
     }
     return L;
 }
@@ -109,11 +118,9 @@ RT_PROGRAM void raytracing_closest_hit()
     record.flux=black();
     record.photon_count=0;
     record.radius2=40.f;
-    //CudaSpectrum DL=directLight(record);
-    CudaSpectrum DL=black();
-    if(isPrint()){
-        rtPrintf("\nDL: %f, %f, %f", DL.x, DL.y, DL.z);
-    }
+    CudaSpectrum DL=directLight(record);
+    //CudaSpectrum DL=black();
+    rtPrintf("\nDL: %f, %f, %f", DL.x, DL.y, DL.z);
     record.directLight=DL;
 }
 

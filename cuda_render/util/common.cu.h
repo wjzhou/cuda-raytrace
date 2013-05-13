@@ -51,10 +51,11 @@ struct CudaLightDevice{
     optix::float3 p1;
     int nSample;
     optix::float3 p2;
-    int randomStart;
+    int random2DStart;
     CudaSpectrum intensity;
     //int random2DStart;
     optix::float3 normal;
+    float area;
 };
 
 enum MaterialType{

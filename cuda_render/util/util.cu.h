@@ -21,19 +21,6 @@ __device__ __inline__ bool isBlack(CudaSpectrum &sp){
 rtDeclareVariable(uint2, launchIndex, rtLaunchIndex,);
 
 #define DEBUG_KERNEL
-#ifdef DEBUG_KERNEL
-__device__ __inline__ bool isPrint()
-{
-    if(launchIndex.x==500 &&launchIndex.y==500)
-        return true;
-    return false;
-}
 
-__device__ __inline__ void debugPrint(const optix::Ray& photonRay)
-{
-    rtPrintf("\n%f %f %f, %f %f %f", photonRay.direction.x, photonRay.direction.y, photonRay.direction.z, photonRay.origin.x, photonRay.origin.y, photonRay.origin.z);
-}
-
-#endif
 
 #endif // util.cu_h__

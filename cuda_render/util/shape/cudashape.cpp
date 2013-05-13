@@ -11,19 +11,13 @@ void CudaShape::init()
 CudaShape*
 CudaShape::CreateCudaShape(const string& name, Reference<Shape>& shape)
 {
-    Shape* pShape=shape.release();
     if (name=="trianglemesh"){
-        TriangleMesh* tm=static_cast<TriangleMesh*>(pShape);
-        CudaTriangleMesh* ctm=new CudaTriangleMesh (std::move(*tm));
-        delete tm;
-        shape=ctm;
+        CudaTriangleMesh* ctm=new CudaTriangleMesh(shape);
         return ctm;
-    }else if(Sphere* sp=dynamic_cast<Sphere*>(pShape)){
-        CudaShape* csp=new CudaSphere(sp);
-        shape=pShape;
+    }else if(name=="sphere"){
+        CudaShape* csp=new CudaSphere(shape);
         return csp;
     }else{
-        shape=pShape;
         return nullptr;
     }
 }

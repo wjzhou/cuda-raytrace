@@ -35,7 +35,7 @@ public:
         const Transform& tr);
     void createCudaShape(const std::string& name, Reference<Shape>& shape,
         vector<Reference<Primitive> >* currentInstance,
-        const Material* kMaterial);
+        const Material* kMaterial, int lightIndex);
     optix::Group topGroup;
     void createSubRenderer(Sampler *sampler, Camera *camera,
         const ParamSet &params, const std::string& rendername);

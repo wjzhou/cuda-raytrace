@@ -35,7 +35,7 @@ void PhotonMappingRenderer::render(const Scene *ascene, CudaRender* acudarender,
     preLaunch();
     RaytracingPass();
     PhotonTracingPassPreLaunch();
-    int passes=20;
+    int passes=2;
     for (int i=0; i<passes; ++i){
         PhotonTracingPass(i);
         PhotonGatheringPass();
@@ -45,9 +45,6 @@ void PhotonMappingRenderer::render(const Scene *ascene, CudaRender* acudarender,
 }
 
 void PhotonMappingRenderer::preLaunch(){
-
-    gContext->setPrintEnabled(true);
-    gContext->setPrintBufferSize(4096);
 
     gContext->setStackSize(2048);
     gContext->setRayTypeCount(PM_NUM_RAY_TYPE);
@@ -238,10 +235,11 @@ void PhotonMappingRenderer::FinalGatheringPass()
     bOutput->setSize(width, height);
     gContext["bOutput"]->set(bOutput);
     gContext["emittingPhotons"]->setFloat((float) totalPhotons);
+    printf("preFInal");
     gContext->launch(PM_FinalGatheringPass,
         static_cast<unsigned int>(width),
         static_cast<unsigned int>(height));
-
+     printf("postFInal");
     optix::float3* pOutput= reinterpret_cast<optix::float3*> (bOutput->map());
     CameraSample* csamples=cudacamera->getCameraSamples();
 
@@ -271,6 +269,7 @@ void PhotonMappingRenderer::FinalGatheringPass()
     bOutput->unmap();
     bOutput->destroy();
     //fclose(file);
+    
 }
 
 void PhotonMappingRenderer::postLaunch()

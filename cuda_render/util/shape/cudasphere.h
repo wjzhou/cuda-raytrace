@@ -8,7 +8,7 @@
 #include "shapes\sphere.h"
 class CudaSphere : public CudaShape{
 public:
-    CudaSphere(Sphere* sphere);
+    CudaSphere(const Reference<Shape>& shape);
     SPACE intersectionSpace(){return CudaShape::OBJECT_SPACE;}
     optix::Transform setupTransform();
 
@@ -16,6 +16,6 @@ public:
     static optix::Program progBoundingBox;
     static optix::Program progIntersection;
 protected:
-    Sphere* sphere;
+    const Reference<Shape>& shape;
 };
 #endif // cudasphere_h__

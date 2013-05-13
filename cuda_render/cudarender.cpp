@@ -27,6 +27,11 @@ void CudaRender::init()
         gContext->createProgramFromPTXFile(ptxpath("util", "dummy.cu"), "dummy"));
     gContext->compile();
 
+    //set debug info
+    gContext->setPrintLaunchIndex(500,500);
+    gContext->setPrintEnabled(true);
+    gContext->setPrintBufferSize(4096);
+
     CudaShape::init();
 }
 
@@ -130,7 +135,7 @@ void CudaRender::createSubRenderer(Sampler *sampler, Camera *camera,
 
 void CudaRender::createCudaShape(const std::string& name, Reference<Shape>& shape,
     vector<Reference<Primitive> >* currentInstance,
-    const Material* kMaterial)
+    const Material* kMaterial, int lightIndex)
 {
     CudaShape* cs=CudaShape::CreateCudaShape(name, shape);
     if (cs==nullptr){
@@ -185,6 +190,7 @@ void CudaRender::createCudaShape(const std::string& name, Reference<Shape>& shap
     {
         material=(*it).second;
     }
+    instance["lightIndex"]->setInt(lightIndex);
     material->setupMaterial(instance);
     
 }

@@ -7,13 +7,14 @@
 optix::Program CudaSphere::progBoundingBox;
 optix::Program CudaSphere::progIntersection;
 
-CudaSphere::CudaSphere(Sphere* sp)
-    :sphere(sp)
+CudaSphere::CudaSphere(const Reference<Shape>& shape)
+    :shape(shape)
 {
 }
 
 optix::Transform CudaSphere::setupTransform()
 {
+    const Sphere* sphere=dynamic_cast<const Sphere*>(shape.GetPtr());
     optix::Geometry geomtry=gContext->createGeometry();
     geomtry->setPrimitiveCount(1);
     geomtry->setIntersectionProgram(progIntersection);

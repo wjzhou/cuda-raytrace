@@ -33,7 +33,7 @@ void CudaLight::setupLight<DiffuseAreaLight>(DiffuseAreaLight* al, CudaSample* s
             Vector worldx=(*disk->ObjectToWorld)(Vector(disk->radius, 0.f, 0.f));
             Vector worldy=(*disk->ObjectToWorld)(Vector(0.f, disk->radius, 0.f));
             Vector normal=Normalize(Cross(worldx, worldy));
-            Point worldo=(*disk->ObjectToWorld)(Point(0.f, 0.f, disk->height));
+            Point worldo=(*disk->ObjectToWorld)(Point(-disk->radius/2.f, -disk->radius/2.f, disk->height));
             /*int start=addAux(make_float4(worldo.x, worldo.y,  worldo.z, normal.x));
             addAux(make_float4(worldx.x, worldx.y,  worldx.z, normal.y));
             addAux(make_float4(worldy.x, worldy.y,  worldy.z, normal.z));*/
@@ -42,8 +42,9 @@ void CudaLight::setupLight<DiffuseAreaLight>(DiffuseAreaLight* al, CudaSample* s
             cld.p1=float3fromVector(worldx);
             cld.p2=float3fromVector(worldy);
             cld.normal=float3fromVector(normal);
-            cld.intensity=CudaSpectrumFromSpectrum(al->Lemit*((*it)->Area()));
-            cld.randomStart=sample->Add2D(samplePerShape);
+            cld.intensity=CudaSpectrumFromSpectrum(al->Lemit);
+            cld.area=(*it)->Area();
+            cld.random2DStart=sample->Add2D(samplePerShape);
             cld.nSample=samplePerShape;
             addLight(cld);
         }else{
@@ -127,7 +128,8 @@ void CudaLight::preLaunch(const Scene* scene, CudaSample* sample, unsigned int w
         rng.generate((float*)dLightRandom2D, samples);
         //actually, I do not need input, but seems I do not have the RT_FORMATE_NONE option
         //Must have RT_BUFFER_INPUT here, otherwise the optix assert will fail
-        bLightRandom=gContext->createBufferForCUDA(RT_BUFFER_INPUT, RT_FORMAT_FLOAT2, width, height, (sample->Sample2DOffset));
+        bLightRandom=gContext->createBufferForCUDA(RT_BUFFER_INPUT, RT_FORMAT_FLOAT2, 
+            sample->Sample2DOffset, width, height);
         int currentDevice=0;
         checkCudaErrors(cuCtxGetDevice(&currentDevice));
         bLightRandom->setDevicePointer(currentDevice, dLightRandom2D);

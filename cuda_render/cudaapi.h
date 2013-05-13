@@ -13,7 +13,7 @@ void CudaRenderInit();
 
 void CreateCudaShape(const std::string &name, Reference<Shape>& shape,
     std::vector<Reference<Primitive> >* currentInstance,
-    const Material* material);
+    const Material* material, int lightIndex);
 
 void CudaObjectInstance(std::vector<Reference<Primitive> >* key,
     const Transform& transform);
