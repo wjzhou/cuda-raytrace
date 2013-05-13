@@ -10,6 +10,7 @@
 #include "../cudarender.h"
 #include <cuda.h>
 #include "util/light/CudaLight.h"
+#include "util/random/cudarandom.h"
 
 class PhotonMappingRenderer : public CudaRenderer
 {
@@ -35,9 +36,16 @@ private:
 
     void preLaunch();
     void RaytracingPass();
-    void PhotonTracingPass();
-    void GatheringPass();
+    void PhotonTracingPassPreLaunch();
+    void PhotonTracingPass(int pass);
+    void PhotonGatheringPass();
+    void FinalGatheringPass();
     void postLaunch();
-    void CreatePhotonMap(CUdeviceptr tIndirectPhotomap, unsigned int numPhotons);
+    void CreatePhotonMap(CUdeviceptr dIndirectPhotomap, unsigned int numPhotons);
+    CUdeviceptr dIndirectPhotomap;
+    CUdeviceptr dPhotonTracingRandom;
+    CUdeviceptr dHaltonPermute;
+    CudaRandom* rng;
+    double totalPhotons;
 };
 #endif // PhotonMappingRenderer_h__

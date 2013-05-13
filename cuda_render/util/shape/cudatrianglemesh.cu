@@ -49,29 +49,29 @@ RT_PROGRAM void trianglemesh_intersect( int primIdx )
             if (determinant == 0.0f){
                 if (fabsf(n.x) > fabsf(n.y)) {
                     float invLen = 1.f/sqrtf(n.x*n.x+n.z*n.z);
-                    dpdu = make_float3(-n.z*invLen, 0.f, n.x*invLen);
+                    aDpdu = make_float3(-n.z*invLen, 0.f, n.x*invLen);
                 }
                 else {
                     float invLen = 1.f/sqrtf(n.y*n.y+n.z*n.z);
-                    dpdu = make_float3(0.f, n.z*invLen, n.y*invLen);
+                    aDpdu = make_float3(0.f, n.z*invLen, n.y*invLen);
                 }
-                dpdv =normalize(cross(n, dpdu));
+                aDpdv =normalize(cross(n, aDpdu));
             }else{
                 float invdet = 1.f / determinant;
-                dpdu = ( dv2 * dp1 - dv1 * dp2) * invdet;
-                dpdv = (-du2 * dp1 + du1 * dp2) * invdet;
+                aDpdu = ( dv2 * dp1 - dv1 * dp2) * invdet;
+                aDpdv = (-du2 * dp1 + du1 * dp2) * invdet;
 
             }
-             uv=(1-beta-gamma)*uv0+beta*uv1+gamma*uv2;
+             aUv=(1-beta-gamma)*uv0+beta*uv1+gamma*uv2;
              //todo alphaTexture
-             geometry_normal=normalize(n);
+             aGeometryNormal=n;
              if (bNormals.size() == 0) {
-                 shading_normal = geometry_normal;
+                 aShadingNormal = aGeometryNormal;
              } else {
                  float3 n0 = bNormals[idx.x];
                  float3 n1 = bNormals[idx.y];
                  float3 n2 = bNormals[idx.z];
-                 shading_normal = normalize(n1*beta + n2*gamma + n0*(1.0f-beta-gamma));
+                 aShadingNormal = n1*beta + n2*gamma + n0*(1.0f-beta-gamma);
                  //shading override
              }
              //p=ray.origin+t*ray.direction;

@@ -61,5 +61,13 @@ enum MaterialType{
     MaterialTypeMatt, MaterialTypeMirror, MaterialTypeGlass
 };
 
+#ifdef __CUDAC__
+#define HOST __host__
+#define DEVICE __device__
+#else
+#define HOST
+#define DEVICE
+#endif
+
 #endif
 

@@ -20,10 +20,11 @@ __device__ __inline__ CudaSpectrum processPhoton(const RayTracingRecord& record,
     if(isPrint()){
         rtPrintf("\nalpha:%f, %f, %f",photon.alpha.x, photon.alpha.y, photon.alpha.z);
     }
-    return k/(maxDist2)*fabs(dot(record.shadingNormal, photon.wi))*f(record.material, record.materialParameter, -record.direction, photon.wi)*photon.alpha;
+    //return k/(maxDist2)*fabs(dot(record.shadingNormal, photon.wi))*f(record.material, record.materialParameter, -record.direction, photon.wi)*photon.alpha;
+    return fabs(dot(record.shadingNormal, photon.wi))*f(record.material, record.materialParameter, -record.direction, photon.wi)*photon.alpha;
 }
 
-__device__ __inline__ CudaSpectrum KdTreeLookup(RayTracingRecord& rec, int nLookup, float maxDist2)
+__device__ __inline__ CudaSpectrum KdTreeLookup(RayTracingRecord& rec, int& nLookup, float maxDist2)
 {
     unsigned int stack[MAX_DEPTH];
     unsigned int stack_current = 0;
@@ -39,7 +40,8 @@ __device__ __inline__ CudaSpectrum KdTreeLookup(RayTracingRecord& rec, int nLook
 
         float dist2=DistanceSquared(node->p, p);
         if(dist2 < maxDist2){
-              L+=processPhoton(rec, *node, dist2, maxDist2);
+            nLookup++;
+            L+=processPhoton(rec, *node, dist2, maxDist2);
         }
         
 
@@ -95,45 +97,13 @@ __device__ __inline__ CudaSpectrum KdTreeLookup(RayTracingRecord& rec, int nLook
 #undef pop_node
 }
 
-__device__ __inline__ CudaSpectrum LPhoton(RayTracingRecord& rec, int nLookup, float maxDist2)
+__device__ __inline__ CudaSpectrum LPhoton(RayTracingRecord& rec, int& nLookup, float maxDist2)
 {
     return KdTreeLookup(rec, nLookup, maxDist2);
     //return black();
 }
 
-struct ShadowPRD
-{
-    float attenuation;
-};
-rtDeclareVariable(rtObject, top_group, ,);
-rtDeclareVariable(float, scene_epsilon, ,);
-__device__ __inline__ CudaSpectrum directLight(const RayTracingRecord& rec){
-    CudaSpectrum L=black();
-    const float3& point=rec.position;
-
-    float3 world_shading_normal = rec.shadingNormal;
-    float3 world_geometry_normal = rec.geometryNormal;
-
-    int totalLight=lightSize();
-    //rtPrintf("1 %f,%f,%f\n", L.x,L.y,L.z);
-    for (int i=0; i<totalLight; ++i)
-    {
-        float3 uwi;
-        float pdf;
-        CudaSpectrum li=Sample_L(i, point, uwi, pdf);
-        Ray shadowRay(point, uwi, PM_ShadowRayType, 0.001f, 1.0f-0.001f);
-        ShadowPRD pld;
-        pld.attenuation=1.0f;
-        rtTrace(top_group, shadowRay, pld);
-        float3 wi=normalize(uwi);
-        float3 wo=normalize(-rec.direction);
-        L+=pld.attenuation*fabs(dot(world_shading_normal, wi))*f(rec.material, rec.materialParameter, wo, wi)*li;
-        //rtPrintf("2 %f,%f,%f,%f\n", L.x,L.y,L.z, li.x);
-    }
-    return L;
-}
-
-RT_PROGRAM void gathering_camera(){
+RT_PROGRAM void photonGatheringCamera(){
     RayTracingRecord& rec=bRayTracingOutput[launchIndex];
 
     int rec_flags=rec.flags;
@@ -143,15 +113,36 @@ RT_PROGRAM void gathering_camera(){
         return;
     }
     //rtPrintf("%ld", (long long)indirectPhotonmap);
-    
-    //bOutput[launchIndex]=directLight(rec)+LPhoton(rec, 8, 10.0f);
-    CudaSpectrum DL=directLight(rec);
-    //CudaSpectrum DL=make_float3(0.f);
-    CudaSpectrum IDL=LPhoton(rec, 8, 5.0f);
-    //CudaSpectrum IDL=make_float3(0.f);
     if(isPrint()){
-        rtPrintf("\nDL:%f %f %f, IDL: %f %f %f", DL.x, DL.y, DL.z, IDL.x, IDL.y, IDL.z);
+        rtPrintf("\nradius2:%f, photons:%d IDL: %f %f %f", rec.radius2, rec.photon_count, rec.flux.x/rec.photon_count, rec.flux.y/rec.photon_count, rec.flux.z/rec.photon_count);
     }
-    //bOutput[launchIndex]=DL+IDL;
+    int currentPhotons=0;
+    CudaSpectrum IDL=LPhoton(rec, currentPhotons, rec.radius2);
+    float alpha=0.7f;
+    if(currentPhotons>0){
+        int totalPhotons=rec.photon_count+alpha*currentPhotons;
+        float ratio=totalPhotons/(rec.photon_count+currentPhotons);
+        rec.radius2=rec.radius2*ratio;
+
+        rec.flux=(rec.flux+IDL)*ratio;
+        rec.photon_count=totalPhotons;
+        if(isPrint()){
+            rtPrintf("\nradius2:%f, currphotons:%d,  photons:%d IDL: %f %f %f", rec.radius2, currentPhotons, rec.photon_count, rec.flux.x/rec.photon_count, rec.flux.y/rec.photon_count, rec.flux.z/rec.photon_count);
+        }
+    }
+}
+
+rtDeclareVariable(float, emittingPhotons, ,);
+RT_PROGRAM void finalGatheringCamera(){
+    RayTracingRecord& rec=bRayTracingOutput[launchIndex];
+    CudaSpectrum DL=rec.directLight;
+    CudaSpectrum IDL=black();
+    if(rec.photon_count!=0){
+        IDL=rec.flux*INV_PI/(rec.radius2*emittingPhotons);
+    }
+        
+    if(isPrint()){
+        rtPrintf("\n------DL:%f %f %f,emittingPhotons:%f,  IDL: %f %f %f\n-----\n", DL.x, DL.y, DL.z, emittingPhotons, IDL.x, IDL.y, IDL.z);
+    }
     bOutput[launchIndex]=DL+IDL;
 }

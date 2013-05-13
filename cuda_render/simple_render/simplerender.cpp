@@ -47,12 +47,13 @@ void SimpleRenderer::render(const Scene* scene, CudaRender* cudarender,
 
     //Sample* sample=new Sample(sampler, nullptr, nullptr, scene);
     CudaSample* cudaSample=new CudaSample(sampler);
-    CudaLight light;
-    light.preLaunch(scene, cudaSample);
+    
     cudacamera->init(camera, sampler, cudaSample);
     RTsize width;
     RTsize height;
     cudacamera->getExtent(width, height);
+    CudaLight light;
+    light.preLaunch(scene, cudaSample, width, height);
 
     optix::Program progCamera=gContext->createProgramFromPTXFile(progPTX,
         "simple_camera");

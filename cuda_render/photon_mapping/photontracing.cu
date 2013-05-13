@@ -10,11 +10,12 @@ using namespace optix;
 rtDeclareVariable(float,         scene_epsilon, , );
 rtDeclareVariable(rtObject,      top_group, , );
 
+
+rtDeclareVariable(uint*, haltonPermute,,);
+__device__ static const uint b[]={2,3,5,7,11,13}; 
 #define dims 4
-//PermutedHalton halton(6, rng);
-/*
-__device__ uint *haltonPermutation;
-__device__ uint *b;
+
+
 __device__ __inline__ float PermutedRadicalInverse(uint n, uint base, uint* p) 
 {
     float val = 0;
@@ -29,20 +30,21 @@ __device__ __inline__ float PermutedRadicalInverse(uint n, uint base, uint* p)
     return val;
 }
 
-static const float OneMinusEpsilon=0x1.fffffep-1;
+//static const float OneMinusEpsilon=0x1.fffffep-1;
 __device__ __inline__ void haltonSample(uint n, float* out)
 {
-    uint *p = haltonPermutation;
+    uint *p = haltonPermute;
     for (uint i = 0; i < dims; ++i) {
-        out[i] = min(PermutedRadicalInverse(n, b[i], p), 
-            OneMinusEpsilon);
+        //out[i] = min(PermutedRadicalInverse(n, b[i], p), 
+         //   OneMinusEpsilon);
+        out[i] = PermutedRadicalInverse(n, b[i], p);
         p += b[i];
     }
-}*/
+}
 
 //use a standard halton sequence (a.k.a non-permuted) version at this moment
 //this is determined and generate (1/2, 1/3, 1/5, 1/7) fot the (0,0) 
-__device__ static const uint b[]={2,3,5,7,11,13}; 
+/*
 __device__ __inline__ void haltonSample(uint n, float* out)
 {
     for (uint i=0; i<dims; ++i){
@@ -57,12 +59,11 @@ __device__ __inline__ void haltonSample(uint n, float* out)
         }
         out[i]=val;
     }
-}
+}*/
 
 rtDeclareVariable(uint, lightSourceIndex, , );
 rtDeclareVariable(uint, photonTracinglaunchWidth, , );
 rtDeclareVariable(uint, max_photon_count, ,);
-rtDeclareVariable(uint, photonTracingEmittingPhotons, ,);
 
 enum SampleIndex{LU1=0,LU2, U1,U2};
 
@@ -93,7 +94,7 @@ RT_PROGRAM void photontracing_camera()
     }
     photonRay.ray_type=PM_PhotonTracingType;
     photonRay.tmax=RT_DEFAULT_MAX;
-    CudaSpectrum alpha = (AbsDot(N1, photonRay.direction) * Le) / (pdf*photonTracingEmittingPhotons);
+    CudaSpectrum alpha = (AbsDot(N1, photonRay.direction) * Le) / (pdf);
     if(isPrint()){
         rtPrintf("\nclpha: %f %f %f, Le: %f %f %f, dot: %f pdf:%f", 
             alpha.x, alpha.y, alpha.z, Le.x, Le.y, Le.z, AbsDot(N1, photonRay.direction), pdf);
@@ -118,7 +119,11 @@ rtDeclareVariable(PhotonTraingPayLoad, photonTracingPayLoad, rtPayload, );
 RT_PROGRAM void photontracing_closest_hit()
 {
     float3 hit_point = ray.origin + t*ray.direction;
-    float3 world_shading_normal   = normalize(rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal));
+    //float3 world_shading_normal   = normalize(rtTransformNormal( RT_OBJECT_TO_WORLD, shading_normal));
+
+    if(isPrint()){
+        rtPrintf("\nnIntersections:%d", photonTracingPayLoad.nIntersections);
+    }
 
     if (isSpecular(materialType)){
         Ray newRay;
@@ -135,14 +140,14 @@ RT_PROGRAM void photontracing_closest_hit()
         return;
     }
 
-    float3 world_geometric_normal = normalize(rtTransformNormal( RT_OBJECT_TO_WORLD, geometry_normal));
     float3 wo = -ray.direction;
     //float3 ffnormal = faceforward(world_shading_normal, wo, world_geometric_normal);
-#ifdef DEBUG_KERNEL
+/*#ifdef DEBUG_KERNEL
     if(isPrint()){
         rtPrintf("\n\nwhadingNormal:%f %f %f", world_shading_normal.x, world_shading_normal.y, world_shading_normal.z);
     }
 #endif
+*/   
     
     uint nIntersections=photonTracingPayLoad.nIntersections;
     if (materialHasNonSpecular()){
@@ -165,20 +170,22 @@ RT_PROGRAM void photontracing_closest_hit()
         return;
     }
 
-    float3 wi;
+    float3 wiw;
     float pdf;
     uint ranomIndex=3*(photonTracingPayLoad.pm_index+nIntersections);
     float u1=photonTracingRandom[ranomIndex];
     float u2=photonTracingRandom[ranomIndex+1];
-    CudaSpectrum fr = Sample_f(wo, &wi, u1, u2, &pdf);
+    CudaSpectrum fr = Sample_f(wo, &wiw, u1, u2, &pdf);
 
     if (isBlack(fr) || pdf == 0.f) return;
+    float3 wShadingNormal = normalize(
+        rtTransformNormal(RT_OBJECT_TO_WORLD, aShadingNormal));
     CudaSpectrum anew = photonTracingPayLoad.alpha * fr *
-        AbsDot(wi, shading_normal) / pdf;
+        AbsDot(wiw, wShadingNormal) / pdf;
 
 #ifdef DEBUG_KERNEL
     if(isPrint())
-        rtPrintf("\nanew:%f %f %f", anew.x, anew.y, anew.z);
+        rtPrintf("\nanew:%f %f %f, %f, %f", anew.x, anew.y, anew.z, AbsDot(wiw, wShadingNormal), pdf);
 #endif
 
     // Possibly terminate photon path with Russian roulette
@@ -190,7 +197,7 @@ RT_PROGRAM void photontracing_closest_hit()
     photonTracingPayLoad.alpha=anew;
     photonTracingPayLoad.nIntersections++;
 
-    Ray newRay = Ray(hit_point, wi, PM_PhotonTracingType,
+    Ray newRay = Ray(hit_point, wiw, PM_PhotonTracingType,
         scene_epsilon);
 #ifdef DEBUG_KERNEL
     if(isPrint()){

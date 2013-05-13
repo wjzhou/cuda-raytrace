@@ -44,6 +44,33 @@ rtDeclareVariable(ShadowPRD, shadow_prd, rtPayload, );
 
 //rtDeclareVariable(uint2, launchIndex, rtLaunchIndex,);
 //rtDeclareVariable(MaterialType, materialType, ,);
+
+
+__device__ __inline__ CudaSpectrum directLight(const RayTracingRecord& rec){
+    CudaSpectrum L=black();
+    const float3& point=rec.position;
+
+    float3 world_shading_normal = rec.shadingNormal;
+    //    float3 world_geometry_normal = rec.geometryNormal;
+
+    int totalLight=lightSize();
+    //rtPrintf("1 %f,%f,%f\n", L.x,L.y,L.z);
+    for (int i=0; i<totalLight; ++i)
+    {
+        float3 uwi;
+        float pdf;
+        CudaSpectrum li=Sample_L(i, point, uwi, pdf);
+        Ray shadowRay(point, uwi, PM_ShadowRayType, 0.001f, 1.0f-0.001f);
+        ShadowPRD pld;
+        pld.attenuation=1.0f;
+        rtTrace(top_group, shadowRay, pld);
+        float3 wi=normalize(uwi);
+        float3 wo=normalize(-rec.direction);
+        L+=pld.attenuation*fabs(dot(world_shading_normal, wi))*f(rec.material, rec.materialParameter, wo, wi)*li;
+    }
+    return L;
+}
+
 rtBuffer<RayTracingRecord, 2> bRayTracingOutput;
 RT_PROGRAM void raytracing_closest_hit()
 {
@@ -64,28 +91,34 @@ RT_PROGRAM void raytracing_closest_hit()
         return;
     }
 
-    RayTracingRecord record;
-    float3 world_shading_normal = normalize(
-        rtTransformNormal(RT_OBJECT_TO_WORLD, shading_normal));
-    float3 world_geometry_normal = normalize(
-        rtTransformNormal(RT_OBJECT_TO_WORLD, geometry_normal));
-    
+    RayTracingRecord& record=bRayTracingOutput[launchIndex];
+
     record.flags=0;
     record.position=point;
-    record.dpdu=dpdu;
-    record.dpdv=dpdv;
-    record.shadingNormal=shading_normal;
-    record.geometryNormal=geometry_normal;
+    record.dpdu=normalize(
+        rtTransformNormal(RT_OBJECT_TO_WORLD, aDpdu));
+    record.dpdv=normalize(
+        rtTransformNormal(RT_OBJECT_TO_WORLD, aDpdv));
+    record.shadingNormal=normalize(
+        rtTransformNormal(RT_OBJECT_TO_WORLD, aShadingNormal));
+    record.geometryNormal=normalize(
+        rtTransformNormal(RT_OBJECT_TO_WORLD, aGeometryNormal));
     record.direction=ray.direction;
     record.material=materialType;
     record.materialParameter=materialParameter;
-
-    bRayTracingOutput[launchIndex]=record;
+    record.flux=black();
+    record.photon_count=0;
+    record.radius2=40.f;
+    //CudaSpectrum DL=directLight(record);
+    CudaSpectrum DL=black();
+    if(isPrint()){
+        rtPrintf("\nDL: %f, %f, %f", DL.x, DL.y, DL.z);
+    }
+    record.directLight=DL;
 }
 
 RT_PROGRAM void raytracing_miss()
 {
-//bOutput[launchIndex]=make_float3(0.3f, 0.3f, 0.0f);
     bRayTracingOutput[launchIndex].flags=RayTracingRecordFlageMISS;
 }
 

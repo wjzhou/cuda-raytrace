@@ -4,6 +4,9 @@
 #include "util/util.h"
 #include "lights/diffuse.h"
 #include "shapes/disk.h"
+#include "cuda.h"
+#include "../random/cudarandom.h"
+#include "../cuda/helper_cuda.h"
 
 template <class T>
 void CudaLight::setupLight(T* light, CudaSample* sample){
@@ -80,9 +83,12 @@ void CudaLight::postLaunch()
     bLightsAux->destroy();
     lights.clear();
     lightsAux.clear();
+    if(dLightRandom2D!=0){
+        checkCudaErrors(cuMemFree(dLightRandom2D));
+    }
 }
 
-void CudaLight::preLaunch(const Scene* scene, CudaSample* sample)
+void CudaLight::preLaunch(const Scene* scene, CudaSample* sample, unsigned int width, unsigned int height)
 {
     for (auto it=scene->lights.begin(); it!=scene->lights.end(); ++it){
         CudaLight::setupLight(*it, sample);
@@ -110,5 +116,22 @@ void CudaLight::preLaunch(const Scene* scene, CudaSample* sample)
         bLightsAux->unmap();
     }
     gContext["bLightsAux"]->set(bLightsAux);
+    
+    //because my code do not use the 1Dsample yet, put a assert here if I finnal need it
+    assert(sample->Sample1DOffset==0);
+    unsigned int samples=(2*sample->Sample2DOffset)*width*height;
+    dLightRandom2D=0;
+    if(samples>0){
+        checkCudaErrors(cuMemAlloc(&dLightRandom2D, samples*sizeof(float)));
+        CudaRandom rng(2047);
+        rng.generate((float*)dLightRandom2D, samples);
+        //actually, I do not need input, but seems I do not have the RT_FORMATE_NONE option
+        //Must have RT_BUFFER_INPUT here, otherwise the optix assert will fail
+        bLightRandom=gContext->createBufferForCUDA(RT_BUFFER_INPUT, RT_FORMAT_FLOAT2, width, height, (sample->Sample2DOffset));
+        int currentDevice=0;
+        checkCudaErrors(cuCtxGetDevice(&currentDevice));
+        bLightRandom->setDevicePointer(currentDevice, dLightRandom2D);
+        gContext["bLightRandom2D"]->setBuffer(bLightRandom);        
+    }
 }
 

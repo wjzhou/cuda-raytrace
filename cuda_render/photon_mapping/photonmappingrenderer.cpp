@@ -1,4 +1,4 @@
-
+﻿
 #include "cuda.h"
 #include "util/cuda/helper_cuda.h" // Because the optix pullin some of the cuda runtime API but not all
                                    // include helper_cuda here to avoid problem
@@ -13,11 +13,13 @@
 #include "util/random/cudarandom.h"
 #include "pbrt.h"
 #include <../../../../Program Files (x86)/Microsoft Visual Studio 10.0/VC/include/stdio.h>
+#include "montecarlo.h"
 
 PhotonMappingRenderer::PhotonMappingRenderer(Sampler *s, Camera *c, const ParamSet &params)
 {
     sampler=s;
     camera=c;
+    totalPhotons=0.0;
 }
 
 PhotonMappingRenderer::~PhotonMappingRenderer()
@@ -32,8 +34,13 @@ void PhotonMappingRenderer::render(const Scene *ascene, CudaRender* acudarender,
     cudacamera=acudacamera;
     preLaunch();
     RaytracingPass();
-    PhotonTracingPass();
-    GatheringPass();
+    PhotonTracingPassPreLaunch();
+    int passes=20;
+    for (int i=0; i<passes; ++i){
+        PhotonTracingPass(i);
+        PhotonGatheringPass();
+    }
+    FinalGatheringPass();
     postLaunch();
 }
 
@@ -80,8 +87,12 @@ void PhotonMappingRenderer::preLaunch(){
 
     //gathering
     const string progGatheringPTX=ptxpath("photon_mapping", "gathering.cu");
-    gContext->setRayGenerationProgram(PM_GatheringPass, gContext->createProgramFromPTXFile(progGatheringPTX,
-        "gathering_camera"));
+    gContext->setRayGenerationProgram(PM_PhotonGatheringPass, gContext->createProgramFromPTXFile(progGatheringPTX,
+        "photonGatheringCamera"));
+    gContext->setRayGenerationProgram(PM_FinalGatheringPass, gContext->createProgramFromPTXFile(progGatheringPTX,
+        "finalGatheringCamera"));    
+
+
     
     for (std::vector<optix::GeometryInstance>::iterator
         it=cudarender->geometryInstances.begin();
@@ -102,10 +113,10 @@ void PhotonMappingRenderer::RaytracingPass(){
 
     //Sample* sample=new Sample(sampler, nullptr, nullptr, scene);
     CudaSample* cudaSample=new CudaSample(sampler);
-    light.preLaunch(scene, cudaSample);
-    cudacamera->init(camera, sampler, cudaSample);
     
+    cudacamera->init(camera, sampler, cudaSample);
     cudacamera->getExtent(width, height);
+    light.preLaunch(scene, cudaSample, width, height);
 
     cudacamera->preLaunch(scene);
     bRayTracingOutput=gContext->createBuffer(RT_BUFFER_OUTPUT);
@@ -171,50 +182,67 @@ void PhotonMappingRenderer::CreatePhotonMap(CUdeviceptr dPhotonMap, unsigned int
 #define PhotonTracingMaxDepth        4
 #define PhotonTracingMaxWIDTH        512
 #define PhotonTracingMaxHEIGHT       512
-void PhotonMappingRenderer::PhotonTracingPass(){
+
+
+void PhotonMappingRenderer::PhotonTracingPassPreLaunch(){
+    const unsigned int PhotonTracingPhotons=PhotonTracingMaxWIDTH*PhotonTracingMaxHEIGHT*PhotonTracingMaxDepth;
+    const unsigned int PhotonTracingSamples=PhotonTracingPhotons*PhotonTracingRandomPerSample;
+    checkCudaErrors(
+        cuMemAlloc(&dPhotonTracingRandom, sizeof(float)*PhotonTracingSamples));
+    gContext["photonTracingRandom"]->setUserData(sizeof(CUdeviceptr), &dPhotonTracingRandom);
+    checkCudaErrors(
+        cuMemAlloc(&dIndirectPhotomap, sizeof(CudaPhoton)*PhotonTracingPhotons));
+    gContext["indirectPhotonmap"]->setUserData(sizeof(CUdeviceptr), &dIndirectPhotomap);
+    
+    PermutedHalton hal(5, RNG());
+    checkCudaErrors(cuMemAlloc(&dHaltonPermute, hal.sumBases*sizeof(unsigned int)));
+    gContext["haltonPermute"]->setUserData(sizeof(CUdeviceptr), &dHaltonPermute);
+    rng=new CudaRandom();
+
+}
+void PhotonMappingRenderer::PhotonTracingPass(int pass){
 
     Info("Starting photon tracing pass...");
     const unsigned int PhotonTracingPhotons=PhotonTracingMaxWIDTH*PhotonTracingMaxHEIGHT*PhotonTracingMaxDepth;
     const unsigned int PhotonTracingSamples=PhotonTracingPhotons*PhotonTracingRandomPerSample;
 
-    CUdeviceptr tPhotonTracingRandom; 
-    checkCudaErrors(
-        cuMemAlloc(&tPhotonTracingRandom, sizeof(float)*PhotonTracingSamples));
-    gContext["photonTracingRandom"]->setUserData(sizeof(CUdeviceptr), &tPhotonTracingRandom);
-    CudaRandom rng;
-
-    CUdeviceptr tIndirectPhotomap;
-    checkCudaErrors(
-        cuMemAlloc(&tIndirectPhotomap, sizeof(CudaPhoton)*PhotonTracingPhotons));
-    gContext["indirectPhotonmap"]->setUserData(sizeof(CUdeviceptr), &tIndirectPhotomap);
-
-    rng.generate((float*)tPhotonTracingRandom, PhotonTracingSamples);    
+    rng->generate((float*)dPhotonTracingRandom, PhotonTracingSamples);    
     gContext["lightSourceIndex"]->setUint(0);
     gContext["max_photon_count"]->setUint(PhotonTracingMaxDepth);
     gContext["photonTracinglaunchWidth"]->setUint(PhotonTracingMaxWIDTH);
-    gContext["photonTracingEmittingPhotons"]->setUint(PhotonTracingMaxWIDTH*PhotonTracingMaxHEIGHT);
+    totalPhotons+=(PhotonTracingMaxWIDTH*PhotonTracingMaxHEIGHT);
+
+    PermutedHalton hal(5, RNG(pass++));
+    checkCudaErrors(cuMemcpyHtoD(dHaltonPermute, hal.permute, hal.sumBases*sizeof(unsigned int)));
+
     
     gContext->launch(PM_PhotonTracingPass,
         PhotonTracingMaxWIDTH, PhotonTracingMaxHEIGHT);
-    CreatePhotonMap(tIndirectPhotomap, PhotonTracingPhotons);
+    CreatePhotonMap(dIndirectPhotomap, PhotonTracingPhotons);
 
     //cuMemFree(tIndirectPhotomap);
-    cuMemFree(tPhotonTracingRandom);
+    //cuMemFree(dPhotonTracingRandom);
 }
 
-void PhotonMappingRenderer::GatheringPass()
+void PhotonMappingRenderer::PhotonGatheringPass(){
+    gContext->launch(PM_PhotonGatheringPass, 
+        static_cast<unsigned int>(width),
+        static_cast<unsigned int>(height));
+}
+
+void PhotonMappingRenderer::FinalGatheringPass()
 {
+    int totoalSample=width*height;
     optix::Buffer bOutput=gContext->createBuffer(RT_BUFFER_OUTPUT);
     bOutput->setFormat(RT_FORMAT_FLOAT3);
     bOutput->setSize(width, height);
     gContext["bOutput"]->set(bOutput);
-    gContext->launch(PM_GatheringPass,
+    gContext["emittingPhotons"]->setFloat((float) totalPhotons);
+    gContext->launch(PM_FinalGatheringPass,
         static_cast<unsigned int>(width),
-        static_cast<unsigned int>(height)
-        );
+        static_cast<unsigned int>(height));
 
     optix::float3* pOutput= reinterpret_cast<optix::float3*> (bOutput->map());
-    int totoalSample=width*height;
     CameraSample* csamples=cudacamera->getCameraSamples();
 
     //FILE *file = fopen("pm.txt","w");
@@ -240,7 +268,9 @@ void PhotonMappingRenderer::GatheringPass()
         //fprintf(file, "\niX:%f\tiY%f\t", csamples[i].imageX, csamples[i].imageY);
         //result.Print(file);    
     }
-   // fclose(file);
+    bOutput->unmap();
+    bOutput->destroy();
+    //fclose(file);
 }
 
 void PhotonMappingRenderer::postLaunch()

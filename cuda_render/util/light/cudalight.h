@@ -8,7 +8,7 @@
 
 class CudaLight{
 public:
-    void preLaunch(const Scene* scene, CudaSample* sample);
+    void preLaunch(const Scene* scene, CudaSample* sample, unsigned int width, unsigned int height);
     void postLaunch();
 
 private:
@@ -19,6 +19,8 @@ private:
     vector<optix::float4> lightsAux;
     optix::Buffer bLights;
     optix::Buffer bLightsAux;
+    CUdeviceptr dLightRandom2D;
+    optix::Buffer bLightRandom;
 };
 
 /*class CudaLight{

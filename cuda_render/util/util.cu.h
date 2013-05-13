@@ -24,7 +24,7 @@ rtDeclareVariable(uint2, launchIndex, rtLaunchIndex,);
 #ifdef DEBUG_KERNEL
 __device__ __inline__ bool isPrint()
 {
-    if(launchIndex.x==1 &&launchIndex.y==0)
+    if(launchIndex.x==500 &&launchIndex.y==500)
         return true;
     return false;
 }

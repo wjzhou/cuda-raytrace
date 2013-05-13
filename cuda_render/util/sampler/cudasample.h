@@ -12,7 +12,7 @@ public:
     CudaSample(const Sampler* sampler);
     uint32_t Add1D(uint32_t& num);
     uint32_t Add2D(uint32_t& num);
-     Sample* sample;
+    Sample* sample;
 
     const Sampler* sampler;
     uint32_t Sample1DOffset;

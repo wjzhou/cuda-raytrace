@@ -43,11 +43,11 @@ RT_PROGRAM void sphere_intersect(int primIdx)
         float u=phi/(2.0f*M_PI);
         float theta = acosf(clamp(phit.z / radius, -1.f, 1.f));
         float v = (theta)/(M_PI);
-        uv=make_float2(u, v);
+        aUv=make_float2(u, v);
 
-        shading_normal = geometry_normal = phit/radius;
-        dpdu=make_float3(-shading_normal.y, shading_normal.x, 0.f);
-        dpdv=cross(shading_normal, dpdu);
+        aShadingNormal = aGeometryNormal = phit/radius;
+        aDpdu=make_float3(-aShadingNormal.y, aShadingNormal.x, 0.f);
+        aDpdv=cross(aShadingNormal, aDpdu);
         if(rtReportIntersection(0)){
             check_second=false;
         }
@@ -61,11 +61,11 @@ RT_PROGRAM void sphere_intersect(int primIdx)
             float u=phi/(2.0f*M_PI);
             float theta = acosf(clamp(phit.z / radius, -1.f, 1.f));
             float v = (theta)/(M_PI);
-            uv=make_float2(u, v);
+            aUv=make_float2(u, v);
 
-            shading_normal = geometry_normal = phit/radius;
-            dpdu=make_float3(-shading_normal.y, shading_normal.x, 0.f);
-            dpdv=cross(shading_normal, dpdu);
+            aShadingNormal = aGeometryNormal = phit/radius;
+            aDpdu=make_float3(-aShadingNormal.y, aShadingNormal.x, 0.f);
+            aDpdv=cross(aShadingNormal, aDpdu);
             rtReportIntersection(0);
         }
     }

@@ -127,13 +127,14 @@ __device__ __inline__ CudaSpectrum Sample_f_Lambert(const float3 &wo, float3 *wi
 __device__ __inline__ CudaSpectrum Sample_f(const float3 &wow, float3 *wiw,
                                             float u1, float u2, float *pdf)
 {
-    const float3 nn=normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, shading_normal));
-    const float3 sn=normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, dpdu));
+    const float3 nn=normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, aShadingNormal));
+    const float3 sn=normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, aDpdu));
     const float3 tn=cross(nn, sn);
-    if(isPrint()){
+  /*  if(isPrint()){
         rtPrintf("\nSn:%f %f %f, tn:%f %f %f, nn:%f %f %f u1: %f, u2:%f", sn.x, sn.y, sn.z, tn.x, tn.y, tn.z,nn.x, nn.y, nn.z,u1, u2);
 
     }
+    */
 
     float3 wo=WorldToLocal(wow, nn, sn, tn);
     float3 wi;
@@ -180,8 +181,8 @@ __inline__ __device__ CudaSpectrum materialSpecularGlass(const float3 &wo, float
 
 __inline__ __device__ CudaSpectrum materialSpecular(const float3 &wow, float3 *wiw, bool photonRay, float3 p)
 {
-    const float3 nn=normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, shading_normal));
-    const float3 sn=normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, dpdu));
+    const float3 nn=normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, aShadingNormal));
+    const float3 sn=normalize(rtTransformNormal(RT_OBJECT_TO_WORLD, aDpdu));
     const float3 tn=cross(nn, sn);
 
     float3 wo=WorldToLocal(wow, nn, sn, tn);

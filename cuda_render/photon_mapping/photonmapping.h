@@ -20,12 +20,13 @@ struct RayTracingRecord
     float         accum_atten;
     MaterialType  material;
     CUdeviceptr   materialParameter;
+    CudaSpectrum  directLight;
 };
 #define RayTracingRecordFlageException 0x01
 #define RayTracingRecordFlageMISS 0x02
 
-enum PMRayType{PM_RayTracingType=0, PM_PhotonTracingType, PM_GatheringType, PM_ShadowRayType, PM_NUM_RAY_TYPE};
-enum PMRayPass{PM_RayTracingPass=0, PM_PhotonTracingPass, PM_GatheringPass, PM_NUM_Pass};
+enum PMRayType{PM_RayTracingType=0, PM_PhotonTracingType, PM_ShadowRayType, PM_NUM_RAY_TYPE};
+enum PMRayPass{PM_RayTracingPass=0, PM_PhotonTracingPass, PM_PhotonGatheringPass, PM_FinalGatheringPass, PM_NUM_Pass};
 
 
 struct CudaPhoton{

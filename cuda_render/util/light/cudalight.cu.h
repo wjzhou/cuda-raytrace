@@ -8,13 +8,16 @@ rtBuffer<float4, 1>  bLightsAux;
 __device__ __inline__ int lightSize(){
     return bLights.size();
 }
-rtBuffer<float, 3>  bRandom1D;
-rtBuffer<optix::float2, 3>  bRandom2D;
+rtBuffer<float, 3>  bLightRandom1D;
+rtBuffer<optix::float2, 3>  bLightRandom2D;
 
 __device__ __inline__ CudaSpectrum Sample_L_Point(const CudaLightDevice& cld, const float3& point,
     float3& uwi, float& pdf)
 {
     uwi=cld.o-point; //unnormalized wi
+    if(isPrint()){
+        rtPrintf("\ncld:%f, %f, %f, poing%f, %f, %f\n", cld.o.x, cld.o.y, cld.o.z, point.x, point.y, point.z );
+    }
     float invlength2=1.0f/dot(uwi, uwi);
     //wi=uwi*sqrtf(invlength2);
     pdf=1.f;
@@ -25,7 +28,7 @@ __device__ __inline__ CudaSpectrum Sample_L_Area_Disk(const CudaLightDevice& cld
     float3& wi, float& pdf)
 {
     optix::uint3 index=make_uint3(cld.randomStart, launchIndex);
-    optix::float2 u=bRandom2D[index];
+    optix::float2 u=bLightRandom2D[index];
     float3 uwi=cld.o+u.x*cld.p1+u.y*cld.p2-point;
     
     wi=normalize(uwi);
@@ -43,7 +46,7 @@ __device__ __inline__ CudaSpectrum Sample_L(const int iLight, const float3& poin
     case CudaLightDevice::POINT:
         return Sample_L_Point(cld, point, wi, pdf);
     case CudaLightDevice::AREA_DISK:
-        //rtPrintf("almost not possible:%d\n", iLight);
+        //return Sample_L_Area_Disk(cld, point, wi, pdf);
         return Sample_L_Area_Disk(cld, point, wi, pdf);
     }
     return black();
@@ -73,13 +76,36 @@ __device__ __inline__ CudaSpectrum Sample_L_Point(const int iLight, float lu1, f
     return cld.intensity;
 }
 
+__device__ __inline__ CudaSpectrum Sample_L_Area_Disk(const int iLight, float lu1, float lu2,
+                                                  float u1, float u2, Ray *ray, float3 *Ns, float *pdf)
+{
+    CudaLightDevice cld=bLights[iLight];
+
+    float3 org = cld.o+lu1*cld.p1+lu2*cld.p2;
+    float3 dir = UniformSampleSphere(u1, u2);
+    *Ns=cld.normal;
+
+    if (dot(dir, *Ns) < 0.) dir *= -1.f;
+    ray->origin=org;
+    ray->direction=dir;
+    ray->tmin= 1e-3f;
+    ray->tmax=RT_DEFAULT_MAX;
+
+    *pdf=INV_TWOPI;
+    return cld.intensity;
+}
+
+
 __device__ __inline__ CudaSpectrum Sample_L(const int iLight, float lu1, float lu2,
                                             float u1, float u2, Ray *ray, float3 *Ns, float *pdf){
     CudaLightDevice cld=bLights[iLight];
     switch(cld.lt){
     case CudaLightDevice::POINT:
         return Sample_L_Point(iLight, lu1, lu2, u1, u2, ray, Ns, pdf);
+    case CudaLightDevice::AREA_DISK:
+        return Sample_L_Area_Disk(iLight, lu1, lu2, u1, u2, ray, Ns, pdf);
     }
+    
     return black();
 }
 
