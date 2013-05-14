@@ -25,13 +25,19 @@ __device__ __inline__ CudaSpectrum Sample_L_Point(const CudaLightDevice& cld, co
 }
 
 __device__ __inline__ CudaSpectrum Sample_L_Area_Disk(const CudaLightDevice& cld, const float3& point,
-    float3& wi, float& pdf)
+        float3& uwi, float& pdf)
 {
     optix::uint3 index=make_uint3(cld.random2DStart, launchIndex);
     optix::float2 u=bLightRandom2D[index];
-    float3 uwi=cld.o+u.x*cld.p1+u.y*cld.p2-point;
-    
-    wi=normalize(uwi);
+
+    float x,y;
+    ConcentricSampleDisk(u.x, u.y, &x, &y);
+
+    uwi=cld.o+x*cld.p1+y*cld.p2-point;
+    rtPrintf("x:%f y:%f, point: %f, %f, %f, uwi: %f, %f, %f", x,y, 
+        point.x, point.y, point.z, uwi.x, uwi.y, uwi.z);
+
+    float3 wi=normalize(uwi);
     //pdf=1.f;
     float distanceSquared=dot(uwi,uwi);
     float costha=-dot(cld.normal, wi);
@@ -83,14 +89,17 @@ __device__ __inline__ CudaSpectrum Sample_L_Area_Disk(const int iLight, float lu
 {
     CudaLightDevice cld=bLights[iLight];
 
-    float3 org = cld.o+lu1*cld.p1+lu2*cld.p2;
+    float x,y;
+    ConcentricSampleDisk(lu1, lu2, &x, &y);
+
+    float3 org = cld.o+x*cld.p1+y*cld.p2;
     float3 dir = UniformSampleSphere(u1, u2);
     *Ns=cld.normal;
 
     if (dot(dir, *Ns) < 0.) dir *= -1.f;
     ray->origin=org;
     ray->direction=dir;
-    ray->tmin= 1.f;
+    ray->tmin= 1e-2f;
     ray->tmax=RT_DEFAULT_MAX;
 
     *pdf=INV_TWOPI;

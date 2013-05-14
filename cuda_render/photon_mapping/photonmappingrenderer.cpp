@@ -161,6 +161,9 @@ void PhotonMappingRenderer::CreatePhotonMap(CUdeviceptr dPhotonMap, unsigned int
         }
     }
     Info("Valid photons:%d, Total photons:%d", photons.size(), numPhotons);
+    if(photons.size()==0){
+        Severe("0 photon numbers, quit");
+    }
     if(photons.size()>0){
         KdTree<TPhoton> kdtree(photons);
         for (unsigned int i=0; i<kdtree.nNodes; ++i){

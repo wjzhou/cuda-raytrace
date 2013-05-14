@@ -33,7 +33,8 @@ void CudaLight::setupLight<DiffuseAreaLight>(DiffuseAreaLight* al, CudaSample* s
             Vector worldx=(*disk->ObjectToWorld)(Vector(disk->radius, 0.f, 0.f));
             Vector worldy=(*disk->ObjectToWorld)(Vector(0.f, disk->radius, 0.f));
             Vector normal=Normalize(Cross(worldx, worldy));
-            Point worldo=(*disk->ObjectToWorld)(Point(-disk->radius/2.f, -disk->radius/2.f, disk->height));
+            //Point worldo=(*disk->ObjectToWorld)(Point(-disk->radius/2.f, -disk->radius/2.f, disk->height));
+            Point worldo=(*disk->ObjectToWorld)(Point(0.f, 0.f, disk->height));
             /*int start=addAux(make_float4(worldo.x, worldo.y,  worldo.z, normal.x));
             addAux(make_float4(worldx.x, worldx.y,  worldx.z, normal.y));
             addAux(make_float4(worldy.x, worldy.y,  worldy.z, normal.z));*/

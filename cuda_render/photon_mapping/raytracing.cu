@@ -61,7 +61,7 @@ __device__ __inline__ CudaSpectrum directLight(const RayTracingRecord& rec){
         return L; //prevent GPU kernel crash
     }
 
-    //lightL(lightIndex, -rec.direction);
+    L+=lightL(lightIndex, -rec.direction);
     
     for (int i=0; i<totalLight; ++i)
     {
@@ -75,7 +75,7 @@ __device__ __inline__ CudaSpectrum directLight(const RayTracingRecord& rec){
         float3 wi=normalize(uwi);
         float3 wo=normalize(-rec.direction);
         L+=pld.attenuation*fabs(dot(world_shading_normal, wi))*f(rec.material, rec.materialParameter, wo, wi)*li/pdf;
-        rtPrintf("dot:%f lix:%f pdf:%f", fabs(dot(world_shading_normal, wi)), li.x, pdf);
+        rtPrintf("attenuation:%f dot:%f lix:%f pdf:%f", pld.attenuation, fabs(dot(world_shading_normal, wi)), li.x, pdf);
     }
     return L;
 }
