@@ -2,10 +2,12 @@
 #include "cudatrianglemesh.h"
 #include "shapes/sphere.h"
 #include "cudasphere.h"
+#include "cudadisk.h"
 void CudaShape::init()
 {
     CudaTriangleMesh::init();
     CudaSphere::init();
+    CudaDisk::init();
 }
 
 CudaShape*
@@ -15,8 +17,11 @@ CudaShape::CreateCudaShape(const string& name, Reference<Shape>& shape)
         CudaTriangleMesh* ctm=new CudaTriangleMesh(shape);
         return ctm;
     }else if(name=="sphere"){
-        CudaShape* csp=new CudaSphere(shape);
+        CudaSphere* csp=new CudaSphere(shape);
         return csp;
+    }else if(name=="disk"){
+        CudaDisk* cd=new CudaDisk(shape);
+        return cd;
     }else{
         return nullptr;
     }

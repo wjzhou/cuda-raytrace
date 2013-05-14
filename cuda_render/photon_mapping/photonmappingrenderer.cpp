@@ -35,7 +35,7 @@ void PhotonMappingRenderer::render(const Scene *ascene, CudaRender* acudarender,
     preLaunch();
     RaytracingPass();
     PhotonTracingPassPreLaunch();
-    int passes=2;
+    int passes=1;
     for (int i=0; i<passes; ++i){
         PhotonTracingPass(i);
         PhotonGatheringPass();

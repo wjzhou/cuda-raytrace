@@ -7,15 +7,15 @@
 #include "optix_world.h"
 class CudaDisk : public CudaShape{
 public:
-    CudaDisk(const Disk& disk);
+    CudaDisk(const Reference<Shape>& shape);
 
-    SPACE intersectionSpace(){return CudaShape::OBJECT_SPACE;}
+    SPACE intersectionSpace(){return CudaShape::GLOBAL_SPACE;}
     optix::Geometry setupGeometry();
 
     static void init();
     static optix::Program progBoundingBox;
     static optix::Program progIntersection;
 protected:
-    float height, radius, innerRadius, phiMax;
+    const Reference<Shape>& shape;
 };
 #endif // cudadisk_h__

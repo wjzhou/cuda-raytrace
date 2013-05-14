@@ -13,8 +13,8 @@ rtDeclareVariable(rtObject,      top_group, , );
 
 rtDeclareVariable(uint*, haltonPermute,,);
 __device__ static const uint b[]={2,3,5,7,11,13}; 
-#define dims 4
 
+enum SampleIndex{LU1=0,LU2, U1,U2, NUM_SAMPLEINDEX};
 
 __device__ __inline__ float PermutedRadicalInverse(uint n, uint base, uint* p) 
 {
@@ -34,7 +34,7 @@ __device__ __inline__ float PermutedRadicalInverse(uint n, uint base, uint* p)
 __device__ __inline__ void haltonSample(uint n, float* out)
 {
     uint *p = haltonPermute;
-    for (uint i = 0; i < dims; ++i) {
+    for (uint i = 0; i < NUM_SAMPLEINDEX; ++i) {
         //out[i] = min(PermutedRadicalInverse(n, b[i], p), 
          //   OneMinusEpsilon);
         out[i] = PermutedRadicalInverse(n, b[i], p);
@@ -65,7 +65,7 @@ rtDeclareVariable(uint, lightSourceIndex, , );
 rtDeclareVariable(uint, photonTracinglaunchWidth, , );
 rtDeclareVariable(uint, max_photon_count, ,);
 
-enum SampleIndex{LU1=0,LU2, U1,U2};
+
 
 struct PhotonTraingPayLoad{
     CudaSpectrum alpha;
@@ -80,7 +80,7 @@ rtDeclareVariable(float*, photonTracingRandom, , );
 RT_PROGRAM void photontracing_camera()
 {
     uint  pm_index = (launchIndex.y * photonTracinglaunchWidth + launchIndex.x) * max_photon_count;
-    float sample[6];
+    float sample[NUM_SAMPLEINDEX];
     haltonSample(pm_index, sample);
     //rtPrintf("3");
     optix::Ray photonRay;

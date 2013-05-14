@@ -134,6 +134,10 @@ void CudaLight::preLaunch(const Scene* scene, CudaSample* sample, unsigned int w
         checkCudaErrors(cuCtxGetDevice(&currentDevice));
         bLightRandom->setDevicePointer(currentDevice, dLightRandom2D);
         gContext["bLightRandom2D"]->setBuffer(bLightRandom);        
+    }else{// the optix validator needs it
+        bLightRandom=gContext->createBuffer(RT_BUFFER_INPUT,  RT_FORMAT_FLOAT2);
+        bLightRandom->setSize(0,0,0);
+        gContext["bLightRandom2D"]->setBuffer(bLightRandom);   
     }
 }
 

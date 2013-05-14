@@ -12,6 +12,9 @@ add_cuda_render_library (util
     shape/cudasphere.cu
     shape/cudasphere.h
     shape/cudasphere.cpp
+    shape/cudadisk.cu
+    shape/cudadisk.h
+    shape/cudadisk.cpp
     camera/camera.cu.h
     camera/pbrtcamera.cu
     camera/pbrtcamera.h

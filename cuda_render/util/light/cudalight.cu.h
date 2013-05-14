@@ -90,7 +90,7 @@ __device__ __inline__ CudaSpectrum Sample_L_Area_Disk(const int iLight, float lu
     if (dot(dir, *Ns) < 0.) dir *= -1.f;
     ray->origin=org;
     ray->direction=dir;
-    ray->tmin= 1e-3f;
+    ray->tmin= 1.f;
     ray->tmax=RT_DEFAULT_MAX;
 
     *pdf=INV_TWOPI;
