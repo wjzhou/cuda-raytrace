@@ -9,6 +9,7 @@
 class CudaLight{
 public:
     void preLaunch(const Scene* scene, CudaSample* sample, unsigned int width, unsigned int height);
+    void postDirectLight(); // the direct light need a large buffer, release it as soon as possible
     void postLaunch();
 
 private:

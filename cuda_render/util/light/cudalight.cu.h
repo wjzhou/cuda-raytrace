@@ -8,11 +8,15 @@ rtBuffer<float4, 1>  bLightsAux;
 __device__ __inline__ int lightSize(){
     return bLights.size();
 }
-rtBuffer<float, 3>  bLightRandom1D;
-rtBuffer<optix::float2, 3>  bLightRandom2D;
+rtBuffer<float, 3>  bRandom1D;
+rtBuffer<optix::float2, 3>  bRandom2D;
+
+__device__ __inline__ int lightNSamples(const int iLight){
+    return bLights[iLight].nSample;
+}
 
 __device__ __inline__ CudaSpectrum Sample_L_Point(const CudaLightDevice& cld, const float3& point,
-    float3& uwi, float& pdf)
+    float3& uwi, float& pdf, const int iSample)
 {
     uwi=cld.o-point; //unnormalized wi
         
@@ -25,10 +29,10 @@ __device__ __inline__ CudaSpectrum Sample_L_Point(const CudaLightDevice& cld, co
 }
 
 __device__ __inline__ CudaSpectrum Sample_L_Area_Disk(const CudaLightDevice& cld, const float3& point,
-        float3& uwi, float& pdf)
+        float3& uwi, float& pdf, const int iSample)
 {
-    optix::uint3 index=make_uint3(cld.random2DStart, launchIndex);
-    optix::float2 u=bLightRandom2D[index];
+    optix::uint3 index=make_uint3(cld.random2DStart+iSample, launchIndex);
+    optix::float2 u=bRandom2D[index];
 
     float x,y;
     ConcentricSampleDisk(u.x, u.y, &x, &y);
@@ -48,14 +52,13 @@ __device__ __inline__ CudaSpectrum Sample_L_Area_Disk(const CudaLightDevice& cld
 }
 
 __device__ __inline__ CudaSpectrum Sample_L(const int iLight, const float3& point,
-                                            float3& wi, float& pdf){
-    CudaLightDevice cld=bLights[iLight];
+                                            float3& wi, float& pdf,  const int iSample){
+    CudaLightDevice& cld=bLights[iLight];
     switch(cld.lt){
     case CudaLightDevice::POINT:
-        return Sample_L_Point(cld, point, wi, pdf);
+        return Sample_L_Point(cld, point, wi, pdf, iSample);
     case CudaLightDevice::AREA_DISK:
-        //return Sample_L_Area_Disk(cld, point, wi, pdf);
-        return Sample_L_Area_Disk(cld, point, wi, pdf);
+        return Sample_L_Area_Disk(cld, point, wi, pdf, iSample);
     }
     return black();
 }

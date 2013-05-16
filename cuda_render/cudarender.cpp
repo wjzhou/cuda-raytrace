@@ -28,7 +28,7 @@ void CudaRender::init()
     gContext->compile();
 
     //set debug info
-    gContext->setPrintLaunchIndex(1024,1024);
+    gContext->setPrintLaunchIndex(512,512);
     gContext->setPrintEnabled(true);
     gContext->setPrintBufferSize(4096);
 

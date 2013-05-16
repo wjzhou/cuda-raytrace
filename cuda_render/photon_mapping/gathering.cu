@@ -6,7 +6,7 @@
 rtBuffer<RayTracingRecord, 2> bRayTracingOutput;
 rtBuffer<float3, 2>  bOutput;
 rtDeclareVariable(CudaPhoton*, indirectPhotonmap, , );
-#define MAX_DEPTH 20
+#define MAX_DEPTH 40
 
 __device__ __inline__ float kernel(float dist2, float maxDist2)
 {
@@ -107,7 +107,6 @@ RT_PROGRAM void photonGatheringCamera(){
     int rec_flags=rec.flags;
     // Check if this is hit point lies on an emitter or hit background 
     if( (rec_flags & RayTracingRecordFlageMISS) || (rec_flags & RayTracingRecordFlageException )) {
-        bOutput[launchIndex] = make_float3(0.0f,0.0f,0.0f);
         return;
     }
     
@@ -128,7 +127,13 @@ RT_PROGRAM void photonGatheringCamera(){
 
 rtDeclareVariable(float, emittingPhotons, ,);
 RT_PROGRAM void finalGatheringCamera(){
+
+    
     RayTracingRecord& rec=bRayTracingOutput[launchIndex];
+    if( (rec.flags & RayTracingRecordFlageMISS) || (rec.flags & RayTracingRecordFlageException )) {
+        bOutput[launchIndex] = make_float3(0.0f,0.0f,0.0f);
+        return;
+    }
     CudaSpectrum DL=rec.directLight;
     CudaSpectrum IDL=black();
     if(rec.photon_count!=0){

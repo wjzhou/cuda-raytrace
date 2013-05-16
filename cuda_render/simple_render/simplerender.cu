@@ -51,9 +51,9 @@ RT_PROGRAM void simple_cloest_hit()
     const float3 point=ray.origin+ray.direction*t;
 
     float3 world_shading_normal = normalize(
-        rtTransformNormal(RT_OBJECT_TO_WORLD, shading_normal));
+        rtTransformNormal(RT_OBJECT_TO_WORLD, aShadingNormal));
     float3 world_geometry_normal = normalize(
-        rtTransformNormal(RT_OBJECT_TO_WORLD, geometry_normal));
+        rtTransformNormal(RT_OBJECT_TO_WORLD, aGeometryNormal));
     
     int totalLight=lightSize();
     //rtPrintf("1 %f,%f,%f\n", L.x,L.y,L.z);
@@ -61,7 +61,7 @@ RT_PROGRAM void simple_cloest_hit()
     {
         float3 uwi;
         float pdf;
-        CudaSpectrum li=Sample_L(i, point, uwi, pdf);
+        CudaSpectrum li=Sample_L(i, point, uwi, pdf, 0);
         Ray shadowRay(point, uwi, 1, 0.001f, 1.0f-0.001f);
         ShadowPRD pld;
         pld.attenuation=1.0f;
@@ -74,11 +74,7 @@ RT_PROGRAM void simple_cloest_hit()
     }
 
     bOutput[launchIndex]=L;
-#ifdef DEBUG_KERNEL
-    if(isPrint()){
-        rtPrintf("\nDL:%f %f %f", L.x, L.y, L.z);
-    }
-#endif
+    rtPrintf("\nDL:%f %f %f", L.x, L.y, L.z);
 }
 
 RT_PROGRAM void simple_miss()

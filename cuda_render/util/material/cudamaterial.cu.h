@@ -30,11 +30,11 @@ __device__ __inline__ CudaSpectrum f(MaterialType materialType, CUdeviceptr mate
 
     return black();
 }
-/*
+
 __device__ __inline__ CudaSpectrum f(const optix::float3& wo, const optix::float3& wi)
 {
     return f(materialType, materialParameter, wo, wi);
-}*/
+}
 
 __device__ __inline__ bool SameHemisphere(const float3 &wo, const float3 &wi)
 {

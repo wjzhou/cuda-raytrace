@@ -101,9 +101,11 @@ void PbrtCamera::preLaunch(const Scene* scene)
             csamples[currSample]=samples[i];
             if(sample1Dsize>0){
                 memcpy(pRandom1D, (samples[i].oneD)[0], sample1Dsize*sizeof(float));
+                pRandom1D+=sample1Dsize;
             }
             if(sample2Dsize>0){
                 memcpy(pRandom2D, (samples[i].twoD)[0], cudaSample->Sample2DOffset*sizeof(optix::float2));
+                pRandom2D+=sample2Dsize;
             }
             currSample++;
         }
@@ -121,10 +123,14 @@ void PbrtCamera::preLaunch(const Scene* scene)
 
 void PbrtCamera::postLaunch()
 {
-    bRandom1D->destroy();
+ /*   bRandom1D->destroy();
     bRandom2D->destroy();
     bRays->destroy();
-    delete csamples;
+*/
+    bRandom1D->setSize(0,0,0);
+    bRandom2D->setSize(0,0,0);
+    bRays->setSize(0,(RTsize)0);
+    //delete csamples;
 
 }
 

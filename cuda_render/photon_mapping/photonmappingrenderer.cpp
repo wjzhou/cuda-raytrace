@@ -79,8 +79,8 @@ void PhotonMappingRenderer::preLaunch(){
     optix::Program progPhotonTracingClosestHit=gContext->createProgramFromPTXFile(progPhotonTracingPTX,
         "photontracing_closest_hit");
      m->setClosestHitProgram(PM_PhotonTracingType, progPhotonTracingClosestHit);
-     m->setAnyHitProgram(PM_PhotonTracingType, gContext->createProgramFromPTXFile(progPhotonTracingPTX,
-         "photontracing_debug_anyhit"));
+     //m->setAnyHitProgram(PM_PhotonTracingType, gContext->createProgramFromPTXFile(progPhotonTracingPTX,
+     //    "photontracing_debug_anyhit"));
 
     //gathering
     const string progGatheringPTX=ptxpath("photon_mapping", "gathering.cu");
@@ -126,7 +126,8 @@ void PhotonMappingRenderer::RaytracingPass(){
         static_cast<unsigned int>(width),
         static_cast<unsigned int>(height)
         );
-
+    light.postDirectLight();
+    cudacamera->postLaunch();
     /*RayTracingRecord* pRayTracingOutput= reinterpret_cast<RayTracingRecord*> (bRayTracingOutput->map());
     for(int i=0;i<width*height;++i){
         long long a=(long long)pRayTracingOutput[i].materialParameter;
@@ -278,6 +279,6 @@ void PhotonMappingRenderer::FinalGatheringPass()
 void PhotonMappingRenderer::postLaunch()
 {
     light.postLaunch();
-    cudacamera->postLaunch();
+    
     camera->film->WriteImage();
 }

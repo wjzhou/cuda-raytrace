@@ -19,6 +19,7 @@ void CudaLight::setupLight<PointLight>(PointLight* pl, CudaSample* sample){
     cld.lt=CudaLightDevice::POINT;
     cld.o=float3fromPoint(pl->lightPos);
     cld.intensity=CudaSpectrumFromSpectrum(pl->Intensity);
+    cld.nSample=1;
     addLight(cld);
 }
 
@@ -27,7 +28,9 @@ void CudaLight::setupLight<DiffuseAreaLight>(DiffuseAreaLight* al, CudaSample* s
     CudaLightDevice cld;
     ShapeSet* set=al->shapeSet;
     auto shapes=set->shapes;
-    uint32_t samplePerShape=max(1.0f, ceilf(al->nSamples/shapes.size()));
+    //do not knoe what pbrt want to do here, keep it, may understand furture
+    //uint32_t samplePerShape=max(1.0f, ceilf(al->nSamples/shapes.size()));
+    uint32_t samplePerShape=max(1, al->nSamples);
     for(auto it=shapes.begin(); it!=shapes.end(); ++it){
         if (const Disk* disk=dynamic_cast<const Disk*>((*it).GetPtr())){
             Vector worldx=(*disk->ObjectToWorld)(Vector(disk->radius, 0.f, 0.f));
@@ -79,15 +82,24 @@ int CudaLight::addAux( const optix::float4& data )
     return totalAux;
 }
 
+void CudaLight::postDirectLight()
+{
+    //bLightRandom->destroy();
+    /*if(dLightRandom2D!=0){
+        checkCudaErrors(cuMemFree(dLightRandom2D));
+    }*/
+}
+
+
 void CudaLight::postLaunch()
 {
     bLights->destroy();
     bLightsAux->destroy();
     lights.clear();
     lightsAux.clear();
-    if(dLightRandom2D!=0){
+    /*if(dLightRandom2D!=0){
         checkCudaErrors(cuMemFree(dLightRandom2D));
-    }
+    }*/
 }
 
 void CudaLight::preLaunch(const Scene* scene, CudaSample* sample, unsigned int width, unsigned int height)
@@ -120,7 +132,7 @@ void CudaLight::preLaunch(const Scene* scene, CudaSample* sample, unsigned int w
     gContext["bLightsAux"]->set(bLightsAux);
     
     //because my code do not use the 1Dsample yet, put a assert here if I finnal need it
-    assert(sample->Sample1DOffset==0);
+    /*assert(sample->Sample1DOffset==0);
     unsigned int samples=(2*sample->Sample2DOffset)*width*height;
     dLightRandom2D=0;
     if(samples>0){
@@ -139,6 +151,6 @@ void CudaLight::preLaunch(const Scene* scene, CudaSample* sample, unsigned int w
         bLightRandom=gContext->createBuffer(RT_BUFFER_INPUT,  RT_FORMAT_FLOAT2);
         bLightRandom->setSize(0,0,0);
         gContext["bLightRandom2D"]->setBuffer(bLightRandom);   
-    }
+    }*/
 }
 
