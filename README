@@ -1,0 +1,18 @@
+
+Prerequest:
+CMake
+Optix 3.0
+Cuda 4.2
+Visual Studio 2008/2010
+
+Install:
+1. Use CMake to gererate the Virsual Studio sln file
+2. Open the sln file and set the pbrt-v2 as start-up project
+3. compile
+4. Run, provide the input file.
+
+Limitation:
+1. Only Cuda 4.2 is supported, the Cuda 5 compiler is supported but the optix need Cuda 4.2. (Cuda 5 remove support of set variable by string, which is used extensively by optix)
+2. Only visual studio 2008 and 2010 is supported by Cuda 5. The Visual studio 2012 is =NOT= supported
+3. Cuda Arch higher than 2.0 is needed. The Fermi and Kepler architecture. (GF110 GF104 GK110) The Tesla architecture is not supported for lacking of function pointer support. (G80 G92 GT200 8800GT 9800GT GTX200) 
+
