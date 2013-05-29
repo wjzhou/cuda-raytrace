@@ -1,3 +1,4 @@
 [submodule "pbrt-v2"]
 	path = pbrt-v2
-	url = ssh://mu.ecs.fullerton.edu:80/home/wujun/pbrt-v2.git
+	url = git://github.com/wjzhou/pbrt-v2.git
+
